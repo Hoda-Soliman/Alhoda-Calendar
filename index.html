@@ -759,20 +759,29 @@ function subscribeEvents(){
     }
   );
 }
-function notifyChange(action, data){
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+async function notifyChange(action, data){
   if (typeof emailjs === 'undefined' || !NOTIFY_RECIPIENTS.length) return;
   const catLabel = CATEGORIES[data.category] ? CATEGORIES[data.category].label : (data.category || '');
-  NOTIFY_RECIPIENTS.forEach(email=>{
-    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      email: email,
-      action: action,
-      event_title: data.title || '',
-      event_date: data.date || '',
-      event_category: catLabel,
-      event_note: data.note || '',
-      calendar_link: CALENDAR_LINK,
-    }).catch(err => console.error('Notification email failed for', email, err));
-  });
+  // EmailJS's free plan rejects overlapping requests (429 "Connection Limit
+  // Exceeded") if all recipients are sent at once, so these go out one at a
+  // time with a short gap between them instead of in parallel.
+  for (const email of NOTIFY_RECIPIENTS){
+    try{
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        email: email,
+        action: action,
+        event_title: data.title || '',
+        event_date: data.date || '',
+        event_category: catLabel,
+        event_note: data.note || '',
+        calendar_link: CALENDAR_LINK,
+      });
+    }catch(err){
+      console.error('Notification email failed for', email, err);
+    }
+    await sleep(600);
+  }
 }
 async function storeAdd(data){
   if (state.dbApi){
