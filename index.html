@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Academic Calendar 2026-27</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+  :root{
+    --paper:#F4F6F3;
+    --paper-raised:#FFFFFF;
+    --ink:#1B2B26;
+    --ink-soft:#5B6B65;
+    --line:#DBE2DC;
+    --line-soft:#E9EDE8;
+    --accent:#1F5C52;
+    --accent-ink:#0F332D;
+    --accent-contrast:#FFFFFF;
+    --weekend:#EBEFE9;
+    --today-ring:#C1392B;
+    --shadow:rgba(20,30,26,0.10);
+    --notice:#9A6B12;
+    --notice-bg:#FBF1DE;
+
+    --cat-holiday:#B23A2D;
+    --cat-exam:#96690A;
+    --cat-event:#1C5E86;
+    --cat-trip:#2C7A48;
+    --cat-visit:#6A4C8C;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#141F1B;
+      --paper-raised:#1C2924;
+      --ink:#E9F0EC;
+      --ink-soft:#9FB2AA;
+      --line:#2B3A34;
+      --line-soft:#24322C;
+      --accent:#4FB39E;
+      --accent-ink:#DFF4EE;
+      --accent-contrast:#0B1512;
+      --weekend:#1A2622;
+      --today-ring:#E2685A;
+      --shadow:rgba(0,0,0,0.45);
+      --notice:#E8C77E;
+      --notice-bg:#2E2712;
+
+      --cat-holiday:#E2685A;
+      --cat-exam:#D9A73F;
+      --cat-event:#5CA6D6;
+      --cat-trip:#5FAE79;
+      --cat-visit:#A98FD6;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#141F1B;
+    --paper-raised:#1C2924;
+    --ink:#E9F0EC;
+    --ink-soft:#9FB2AA;
+    --line:#2B3A34;
+    --line-soft:#24322C;
+    --accent:#4FB39E;
+    --accent-ink:#DFF4EE;
+    --accent-contrast:#0B1512;
+    --weekend:#1A2622;
+    --today-ring:#E2685A;
+    --shadow:rgba(0,0,0,0.45);
+    --notice:#E8C77E;
+    --notice-bg:#2E2712;
+
+    --cat-holiday:#E2685A;
+    --cat-exam:#D9A73F;
+    --cat-event:#5CA6D6;
+    --cat-trip:#5FAE79;
+    --cat-visit:#A98FD6;
+  }
+
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Public Sans', -apple-system, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{ font-family:'Newsreader', Georgia, serif; text-wrap:balance; margin:0; }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums; }
+  button{ font-family:inherit; }
+  ::selection{ background:var(--accent); color:var(--accent-contrast); }
+
+  .shell{ max-width:1240px; margin:0 auto; padding:28px 24px 64px; }
+
+  /* ---------- header ---------- */
+  header{
+    display:flex; flex-wrap:wrap; gap:20px 28px;
+    align-items:flex-end; justify-content:space-between;
+    padding-bottom:20px; border-bottom:1px solid var(--line);
+    margin-bottom:20px;
+  }
+  .title-block h1{ font-size:32px; font-weight:600; letter-spacing:-0.01em; }
+  .title-block .sub{ margin-top:6px; color:var(--ink-soft); font-size:14.5px; }
+  .header-actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+  .seg{ display:inline-flex; background:var(--paper-raised); border:1px solid var(--line); border-radius:10px; padding:3px; box-shadow:0 1px 2px var(--shadow); }
+  .seg button{
+    border:none; background:transparent; color:var(--ink-soft);
+    padding:7px 16px; border-radius:7px; font-size:13.5px; font-weight:600; cursor:pointer;
+    letter-spacing:.01em;
+  }
+  .seg button.active{ background:var(--accent); color:var(--accent-contrast); }
+
+  .btn{
+    display:inline-flex; align-items:center; gap:7px;
+    border:1px solid var(--line); background:var(--paper-raised); color:var(--ink);
+    padding:9px 15px; border-radius:9px; font-size:13.5px; font-weight:600; cursor:pointer;
+    box-shadow:0 1px 2px var(--shadow);
+  }
+  .btn:hover{ border-color:var(--accent); }
+  .btn:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+  .btn-primary{ background:var(--accent); color:var(--accent-contrast); border-color:var(--accent); }
+  .btn-primary:hover{ opacity:.92; border-color:var(--accent); }
+  .btn-ghost{ background:transparent; box-shadow:none; }
+  .btn-sm{ padding:6px 11px; font-size:12.5px; border-radius:7px; }
+  .btn-danger{ color:var(--cat-holiday); border-color:var(--cat-holiday); background:transparent; box-shadow:none; }
+
+  /* ---------- notice / legend ---------- */
+  .notice{
+    display:none; align-items:center; gap:10px;
+    background:var(--notice-bg); color:var(--notice); border:1px solid var(--notice);
+    border-radius:10px; padding:10px 14px; font-size:13px; margin-bottom:18px;
+  }
+  .notice.show{ display:flex; }
+
+  .legend{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+  .chip{
+    display:inline-flex; align-items:center; gap:7px;
+    border:1px solid var(--line); background:var(--paper-raised);
+    padding:6px 12px 6px 10px; border-radius:999px; cursor:pointer;
+    font-size:12.5px; font-weight:600; color:var(--ink-soft);
+    transition:opacity .12s ease;
+  }
+  .chip .dot{ width:9px; height:9px; border-radius:50%; flex:none; }
+  .chip.off{ opacity:.4; }
+  .chip.on{ color:var(--ink); border-color:var(--line); }
+
+  /* ---------- year view ---------- */
+  #yearView.hidden, #monthView.hidden{ display:none; }
+  .year-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(252px,1fr));
+    gap:16px;
+  }
+  .mini-month{
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:14px;
+    padding:14px 14px 12px; box-shadow:0 1px 3px var(--shadow); cursor:pointer;
+  }
+  .mini-month:hover{ border-color:var(--accent); }
+  .mini-month header{ all:unset; display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+  .mini-month h3{ font-size:16.5px; font-weight:600; }
+  .mini-month .count{ font-size:11px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; }
+  .mini-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+  .mini-wd{ font-size:9px; text-align:center; color:var(--ink-soft); padding-bottom:3px; letter-spacing:.03em; }
+  .mini-day{
+    aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-size:10.5px; border-radius:5px; position:relative; color:var(--ink);
+  }
+  .mini-day.out{ visibility:hidden; }
+  .mini-day.weekend{ background:var(--weekend); }
+  .mini-day.today{ box-shadow:inset 0 0 0 1.5px var(--today-ring); font-weight:700; }
+  .mini-dots{ display:flex; gap:2px; position:absolute; bottom:2px; }
+  .mini-dots span{ width:4px; height:4px; border-radius:50%; }
+
+  /* ---------- month view ---------- */
+  .month-nav{
+    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;
+    margin-bottom:16px;
+  }
+  .month-nav .left{ display:flex; align-items:center; gap:10px; }
+  .month-nav h2{ font-size:26px; font-weight:600; min-width:190px; }
+  .icon-btn{
+    width:34px; height:34px; border-radius:9px; border:1px solid var(--line); background:var(--paper-raised);
+    color:var(--ink); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px;
+    box-shadow:0 1px 2px var(--shadow);
+  }
+  .icon-btn:hover{ border-color:var(--accent); }
+  select.month-select{
+    border:1px solid var(--line); background:var(--paper-raised); color:var(--ink);
+    padding:8px 10px; border-radius:9px; font-size:13.5px; font-weight:600; cursor:pointer;
+  }
+
+  .day-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
+  .wd-cell{
+    text-align:center; font-size:11.5px; font-weight:700; color:var(--ink-soft);
+    letter-spacing:.04em; text-transform:uppercase; padding-bottom:6px; min-width:0;
+  }
+  .day-cell{
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:11px;
+    height:150px; padding:7px; cursor:pointer; display:flex; flex-direction:column; gap:4px;
+    box-shadow:0 1px 2px var(--shadow); overflow:hidden; min-width:0;
+  }
+  .day-cell:hover{ border-color:var(--accent); }
+  .day-cell.out{ background:transparent; box-shadow:none; border-color:var(--line-soft); cursor:default; }
+  .day-cell.out:hover{ border-color:var(--line-soft); }
+  .day-cell.weekend{ background:var(--weekend); }
+  .day-num{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600; color:var(--ink-soft); }
+  .day-cell.out .day-num{ visibility:hidden; }
+  .day-num.today{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--today-ring); color:#fff; }
+  .chips{
+    display:flex; flex-direction:column; gap:2px;
+    flex:1; min-height:0; overflow-y:auto;
+  }
+  .ev-chip{
+    font-size:9.5px; line-height:1.25; padding:2px 5px; border-radius:4px; color:#fff; font-weight:600;
+    flex:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  /* ---------- upcoming ---------- */
+  .upcoming{ margin-top:32px; }
+  .upcoming h3{ font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); font-family:'Public Sans',sans-serif; font-weight:700; margin-bottom:12px; }
+  .upcoming-row{ display:flex; gap:12px; overflow-x:auto; padding-bottom:6px; }
+  .up-card{
+    flex:none; width:190px; background:var(--paper-raised); border:1px solid var(--line); border-radius:12px;
+    padding:12px; box-shadow:0 1px 2px var(--shadow);
+  }
+  .up-card .date{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); margin-bottom:6px; }
+  .up-card .cat-bar{ width:26px; height:3px; border-radius:2px; margin-bottom:8px; }
+  .up-card .ttl{ font-size:13px; font-weight:600; line-height:1.35; }
+  .up-empty{ color:var(--ink-soft); font-size:13.5px; }
+
+  /* ---------- modals ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(10,16,14,.45); display:none;
+    align-items:flex-start; justify-content:center; padding:6vh 16px; z-index:50; overflow-y:auto;
+  }
+  .overlay.show{ display:flex; }
+  .modal{
+    background:var(--paper-raised); border-radius:16px; width:100%; max-width:480px;
+    box-shadow:0 20px 50px rgba(0,0,0,.25); border:1px solid var(--line);
+  }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; padding:18px 20px 0; }
+  .modal-head h3{ font-size:19px; font-weight:600; }
+  .modal-body{ padding:16px 20px 20px; }
+  .close-x{ border:none; background:transparent; font-size:20px; line-height:1; color:var(--ink-soft); cursor:pointer; padding:4px; }
+
+  .ev-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+  .ev-row{
+    display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:10px; padding:9px 10px;
+  }
+  .ev-row .swatch{ width:9px; height:9px; border-radius:50%; flex:none; }
+  .ev-row .info{ flex:1; min-width:0; }
+  .ev-row .info .t{ font-size:13.5px; font-weight:600; }
+  .ev-row .info .n{ font-size:11.5px; color:var(--ink-soft); }
+  .ev-row .acts{ display:flex; gap:6px; flex:none; }
+  .empty-note{ color:var(--ink-soft); font-size:13px; padding:6px 2px 14px; }
+
+  .field{ margin-bottom:12px; }
+  .field > label{ display:block; font-size:11.5px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
+  .field input[type="date"], .field input[type="text"], .field input[type="time"], .field select, .field textarea{
+    width:100%; border:1px solid var(--line); background:var(--paper); color:var(--ink);
+    padding:9px 10px; border-radius:8px; font-size:13.5px; font-family:inherit;
+  }
+  .field textarea{ resize:vertical; min-height:56px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .cat-select{ display:flex; flex-wrap:wrap; gap:6px; }
+  .cat-opt{ display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--line); border-radius:999px; padding:5px 11px; cursor:pointer; font-size:12px; font-weight:600; }
+  .cat-opt input{ display:none; }
+  .cat-opt .dot{ width:8px; height:8px; border-radius:50%; }
+  .cat-opt.sel{ border-color:currentColor; }
+  .form-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:6px; }
+
+  .import-guide{ font-size:12.5px; color:var(--ink-soft); background:var(--paper); border:1px solid var(--line); border-radius:9px; padding:10px 12px; margin-bottom:12px; line-height:1.5; }
+  .import-guide code{ background:var(--line-soft); padding:1px 5px; border-radius:4px; font-family:'IBM Plex Mono',monospace; }
+  .preview-list{ max-height:220px; overflow-y:auto; border:1px solid var(--line); border-radius:9px; margin:10px 0; }
+  .preview-row{ display:flex; gap:8px; padding:7px 10px; font-size:12px; border-bottom:1px solid var(--line-soft); align-items:baseline; }
+  .preview-row:last-child{ border-bottom:none; }
+  .preview-row.bad{ color:var(--cat-holiday); }
+  .preview-row .pdate{ font-family:'IBM Plex Mono',monospace; flex:none; width:78px; }
+  .progress-track{ height:6px; background:var(--line-soft); border-radius:4px; overflow:hidden; margin-top:10px; display:none; }
+  .progress-track.show{ display:block; }
+  .progress-fill{ height:100%; background:var(--accent); width:0%; transition:width .15s ease; }
+
+  .toast{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(12px);
+    background:var(--ink); color:var(--paper); padding:10px 18px; border-radius:999px;
+    font-size:13px; font-weight:600; opacity:0; pointer-events:none; transition:all .18s ease; z-index:80;
+    box-shadow:0 8px 24px rgba(0,0,0,.25);
+  }
+  :root[data-theme="dark"] .toast, @media (prefers-color-scheme:dark){ .toast{ background:var(--accent); color:var(--accent-contrast); } }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  footer.hint{ margin-top:34px; text-align:center; color:var(--ink-soft); font-size:12px; }
+
+  @media (max-width:640px){
+    .month-nav h2{ font-size:21px; min-width:0; }
+    .day-cell{ height:104px; padding:5px; }
+    .ev-chip{ font-size:8.5px; padding:2px 4px; }
+  }
+
+  @media print{
+    @page{ margin:14mm; }
+    .header-actions, .notice, .upcoming, footer.hint, .overlay, .toast, .seg{ display:none !important; }
+    body{ background:#fff; color:#0f1a16; }
+    .shell{ max-width:none; padding:0; }
+    header{ border-bottom:2px solid #0f1a16; padding-bottom:10px; margin-bottom:14px; }
+    .title-block .sub{ color:#3a463f; }
+    .legend{ margin-bottom:14px; }
+    .chip{ box-shadow:none; border:1px solid #0f1a16; color:#0f1a16 !important; opacity:1 !important; }
+    .day-cell, .mini-month{ box-shadow:none; border:1px solid #9aa69e; break-inside:avoid; }
+    .day-cell.weekend, .mini-day.weekend{ background:#f0f2ee !important; }
+    .ev-chip{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .year-grid{ grid-template-columns:repeat(3, 1fr); gap:10px; }
+    .mini-month{ padding:10px; break-inside:avoid; }
+    .day-grid{ gap:5px; }
+    .day-cell{ height:auto; min-height:84px; padding:6px; overflow:visible; }
+    .chips{ overflow:visible; }
+    .day-num.today{ background:#0f1a16 !important; color:#fff !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .month-nav select, .month-nav .btn{ display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="title-block">
+      <h1>Academic Calendar 2026&ndash;27</h1>
+      <div class="sub">August 2026 &ndash; July 2027 &middot; Sunday&ndash;Thursday school week</div>
+    </div>
+    <div class="header-actions">
+      <div class="seg" role="tablist" aria-label="Calendar view">
+        <button id="tabYear" class="active" onclick="setView('year')">Year</button>
+        <button id="tabMonth" onclick="setView('month')">Month</button>
+      </div>
+      <button class="btn btn-primary" onclick="openImportModal()">Import events</button>
+      <button class="btn" onclick="openExportModal()">Export events</button>
+      <button class="btn" onclick="openDayModal(todayISOClamped())">+ Add event</button>
+      <button class="btn btn-ghost" onclick="window.print()" title="Print current view">Print</button>
+    </div>
+  </header>
+
+  <div id="notice" class="notice"><span>&#9888;</span><span id="noticeText">Connecting to the shared calendar&hellip;</span></div>
+
+  <div class="legend" id="legend"></div>
+
+  <section id="yearView">
+    <div class="year-grid" id="yearGrid"></div>
+  </section>
+
+  <section id="monthView" class="hidden">
+    <div class="month-nav">
+      <div class="left">
+        <button class="icon-btn" onclick="stepMonth(-1)" aria-label="Previous month">&larr;</button>
+        <h2 id="monthTitle"></h2>
+        <button class="icon-btn" onclick="stepMonth(1)" aria-label="Next month">&rarr;</button>
+      </div>
+      <div class="left">
+        <select class="month-select" id="monthSelect" onchange="jumpToMonth(this.value)"></select>
+        <button class="btn btn-sm" onclick="goToday()">Today</button>
+      </div>
+    </div>
+    <div class="day-grid" id="dayGrid"></div>
+  </section>
+
+  <div class="upcoming">
+    <h3>Coming up</h3>
+    <div class="upcoming-row" id="upcomingRow"></div>
+  </div>
+
+  <footer class="hint">Click any day to add, edit, or remove events &middot; Sunday&ndash;Thursday are school days, Friday&ndash;Saturday are shaded as the weekend &middot; everyone with this link sees the same calendar update live, and the notify list gets an email whenever it changes</footer>
+</div>
+
+<!-- Day / Event modal -->
+<div class="overlay" id="dayOverlay" onclick="if(event.target===this) closeDayModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Events</h3>
+      <button class="close-x" onclick="closeDayModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label for="evDate">Date</label>
+        <input type="date" id="evDate" min="2026-08-01" max="2027-07-31" onchange="renderDayList()">
+      </div>
+      <div class="ev-list" id="evList"></div>
+
+      <form id="evForm" onsubmit="submitEventForm(event)">
+        <input type="hidden" id="editingId" value="">
+        <div class="field">
+          <label for="evTitle">Title</label>
+          <input type="text" id="evTitle" placeholder="e.g. Parents' meeting" required maxlength="120">
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <div class="cat-select" id="catSelect"></div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="evTime">Time <span style="text-transform:none;font-weight:500;">(optional)</span></label>
+            <input type="time" id="evTime">
+          </div>
+          <div class="field">
+            <label for="evNote">Note <span style="text-transform:none;font-weight:500;">(optional)</span></label>
+            <input type="text" id="evNote" maxlength="160" placeholder="Short detail">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="cancelEditBtn" style="display:none" onclick="resetForm()">Cancel edit</button>
+          <button type="submit" class="btn btn-primary" id="formSubmitBtn">Add event</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Import modal -->
+<div class="overlay" id="importOverlay" onclick="if(event.target===this) closeImportModal()">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <h3>Import events</h3>
+      <button class="close-x" onclick="closeImportModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="import-guide">
+        One event per line: <code>date, title, category, note</code>. Category and note are optional &mdash; category defaults to Event. Dates can be <code>YYYY-MM-DD</code> or <code>DD/MM/YYYY</code>. Paste straight from a spreadsheet (tab or comma separated).<br>
+        Example: <code>2026-10-06, Armed Forces Day, Holiday</code>
+      </div>
+      <div class="field">
+        <label for="importText">Paste events</label>
+        <textarea id="importText" rows="6" placeholder="2026-09-15, Book Fair, Event, Library hall"></textarea>
+      </div>
+      <button class="btn btn-sm" onclick="parseImportPreview()">Preview</button>
+      <div class="preview-list" id="previewList" style="display:none;"></div>
+      <div class="progress-track" id="importProgress"><div class="progress-fill" id="importProgressFill"></div></div>
+      <div class="form-actions">
+        <span class="mono" id="previewSummary" style="font-size:12px;color:var(--ink-soft);margin-right:auto;align-self:center;"></span>
+        <button class="btn btn-ghost" onclick="closeImportModal()">Cancel</button>
+        <button class="btn btn-primary" id="confirmImportBtn" style="display:none;" onclick="confirmImport()">Import events</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Export modal -->
+<div class="overlay" id="exportOverlay" onclick="if(event.target===this) closeExportModal()">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-head">
+      <h3>Export events</h3>
+      <button class="close-x" onclick="closeExportModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="import-guide">
+        This calendar already syncs automatically for everyone through the shared link &mdash; you don't need to export/import to share your edits. This is just a plain-text backup: copy the list below any time you want a copy outside the calendar (email it to yourself, paste into a spreadsheet, etc).
+      </div>
+      <div class="field">
+        <label for="exportText">All current events (<span id="exportCount">0</span>)</label>
+        <textarea id="exportText" rows="8" readonly onclick="this.select()"></textarea>
+      </div>
+      <div class="form-actions">
+        <span class="mono" id="exportCopyStatus" style="font-size:12px;color:var(--ink-soft);margin-right:auto;align-self:center;"></span>
+        <button class="btn btn-ghost" onclick="closeExportModal()">Close</button>
+        <button class="btn btn-primary" onclick="copyExportText()">Copy to clipboard</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Unlock (edit PIN) modal -->
+<div class="overlay" id="unlockOverlay" onclick="if(event.target===this) closeUnlockModal()">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-head">
+      <h3>Unlock editing</h3>
+      <button class="close-x" onclick="closeUnlockModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 14px;">This calendar is open to view for anyone with the link. Adding, editing, or deleting events needs the shared password.</p>
+      <form onsubmit="submitUnlock(event)">
+        <div class="field">
+          <label for="pinInput">Password</label>
+          <input type="password" id="pinInput" autocomplete="off" autocapitalize="off">
+        </div>
+        <div id="pinError" style="display:none;color:var(--cat-holiday);font-size:12.5px;margin-bottom:10px;">That's not it — try again.</div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeUnlockModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Unlock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+/* ---------------- config ---------------- */
+const CATEGORIES = {
+  holiday: { label:'Holiday',  varc:'--cat-holiday' },
+  exam:    { label:'Exam',     varc:'--cat-exam' },
+  event:   { label:'Event',    varc:'--cat-event' },
+  trip:    { label:'Trip',     varc:'--cat-trip' },
+  visit:   { label:'Visit',    varc:'--cat-visit' },
+};
+function catColor(key){
+  const c = CATEGORIES[key] ? CATEGORIES[key].varc : '--cat-event';
+  return getComputedStyle(document.documentElement).getPropertyValue(c).trim();
+}
+
+const ACADEMIC_MONTHS = [
+  {year:2026, month:7,  label:'August'},
+  {year:2026, month:8,  label:'September'},
+  {year:2026, month:9,  label:'October'},
+  {year:2026, month:10, label:'November'},
+  {year:2026, month:11, label:'December'},
+  {year:2027, month:0,  label:'January'},
+  {year:2027, month:1,  label:'February'},
+  {year:2027, month:2,  label:'March'},
+  {year:2027, month:3,  label:'April'},
+  {year:2027, month:4,  label:'May'},
+  {year:2027, month:5,  label:'June'},
+  {year:2027, month:6,  label:'July'},
+];
+const DEFAULT_EVENTS = [
+  {date:'2026-08-20', title:'Induction of MYP New Teachers', category:'event', time:'', note:''},
+  {date:'2026-08-22', title:'Induction of Teachers', category:'event', time:'', note:''},
+  {date:'2026-08-23', title:'Induction of Teachers', category:'event', time:'', note:''},
+  {date:'2026-08-24', title:'Induction of Teachers', category:'event', time:'', note:''},
+  {date:'2026-08-25', title:'Induction of Teachers', category:'event', time:'', note:''},
+  {date:'2026-08-26', title:'Induction of Teachers', category:'event', time:'', note:''},
+  {date:'2026-08-29', title:'Induction of Teachers', category:'event', time:'', note:''},
+  {date:'2026-08-30', title:'Induction of Teachers', category:'event', time:'', note:''},
+  {date:'2026-09-01', title:'In Service (staff training – no school)', category:'event', time:'', note:''},
+  {date:'2026-09-02', title:'In Service (staff training – no school)', category:'event', time:'', note:''},
+  {date:'2026-09-03', title:'In Service (staff training – no school)', category:'event', time:'', note:''},
+  {date:'2026-09-06', title:'First day of school: MYP 1 & 2', category:'event', time:'', note:''},
+  {date:'2026-09-07', title:'First day of school: PYP 7,8 & MYP 3,4', category:'event', time:'', note:''},
+  {date:'2026-09-08', title:'First day of school: PYP 1, 2 & 3', category:'event', time:'', note:''},
+  {date:'2026-09-09', title:'First day of school: FS2', category:'event', time:'', note:''},
+  {date:'2026-09-14', title:'First day of school: FS1', category:'event', time:'', note:''},
+  {date:'2026-09-27', title:'Year 1 – Life Coach Visit (Feelings)', category:'visit', time:'', note:''},
+  {date:'2026-10-08', title:'Armed Forces Day', category:'holiday', time:'', note:''},
+  {date:'2026-10-20', title:'Sirah Celebration!', category:'event', time:'', note:''},
+  {date:'2026-10-26', title:'Field Trip: Aquarium Garden, Zamalek & Dolphina Show', category:'trip', time:'', note:''},
+  {date:'2026-10-26', title:'Field Trip: 6th of October Palace of Culture (Year 4)', category:'trip', time:'', note:''},
+  {date:'2026-10-27', title:'Field Trip: Meloda\'s Farm (Year 1)', category:'trip', time:'', note:''},
+  {date:'2026-11-15', title:'Field Trip: Disability Support Organization Visit (Year 5)', category:'trip', time:'', note:''},
+  {date:'2026-11-25', title:'Students Early Leave', category:'event', time:'', note:''},
+  {date:'2026-11-28', title:'Garage Sale (Year 5)', category:'event', time:'', note:''},
+  {date:'2026-12-05', title:'FS2 Class Play – "Feelings" (Ms Azza)', category:'event', time:'', note:''},
+  {date:'2026-12-06', title:'Field Trip: Cinnabon / Club / Juhaina Factory Visit (Year 1)', category:'trip', time:'', note:''},
+  {date:'2026-12-06', title:'Field Trip: National Museum of Civilization (Year 5)', category:'trip', time:'', note:''},
+  {date:'2026-12-10', title:'Parents Meeting', category:'event', time:'', note:''},
+  {date:'2026-12-15', title:'Year 1 – Parents\' Career Day', category:'event', time:'', note:''},
+  {date:'2027-01-03', title:'In Service (staff training – no school)', category:'event', time:'', note:''},
+  {date:'2027-01-07', title:'Orthodox Christmas', category:'holiday', time:'', note:''},
+  {date:'2027-01-09', title:'Year 5 – Mini Museum', category:'event', time:'', note:''},
+  {date:'2027-01-28', title:'Police Day', category:'holiday', time:'', note:''},
+  {date:'2027-02-07', title:'In Service (staff training – no school)', category:'event', time:'', note:''},
+  {date:'2027-02-07', title:'First Day of Ramadan', category:'holiday', time:'', note:''},
+  {date:'2027-02-08', title:'Field Trip: Hazel Farm (Year 5)', category:'trip', time:'', note:''},
+  {date:'2027-02-08', title:'FS2 Field Trip – Pollution Scene', category:'trip', time:'', note:''},
+  {date:'2027-03-10', title:'Eid Al-Fitr', category:'holiday', time:'', note:''},
+  {date:'2027-03-11', title:'Eid Al-Fitr', category:'holiday', time:'', note:''},
+  {date:'2027-03-24', title:'Year 4 – Science Show (شارع العلوم)', category:'event', time:'', note:''},
+  {date:'2027-04-07', title:'Mini Sports Day (Year 1)', category:'event', time:'', note:''},
+  {date:'2027-04-21', title:'Year 4 – Science Fair', category:'event', time:'', note:''},
+  {date:'2027-04-24', title:'Field Trip: Sekem Farm (Year 5)', category:'trip', time:'', note:''},
+  {date:'2027-04-24', title:'Field Trip: National Research Institute of Astronomy & Geophysics (Year 4)', category:'trip', time:'', note:''},
+  {date:'2027-04-24', title:'Year 1 – Class Show', category:'event', time:'', note:''},
+  {date:'2027-04-29', title:'Sinai Liberation Day', category:'holiday', time:'', note:''},
+  {date:'2027-05-02', title:'Sham El Nessim', category:'holiday', time:'', note:''},
+  {date:'2027-05-03', title:'Sham El Nessim', category:'holiday', time:'', note:''},
+  {date:'2027-05-06', title:'Labour Day', category:'holiday', time:'', note:''},
+  {date:'2027-05-10', title:'Year 1 – Library Visit (English)', category:'visit', time:'', note:''},
+  {date:'2027-05-16', title:'Day of Arafah', category:'holiday', time:'', note:''},
+  {date:'2027-05-17', title:'Eid Al-Adha', category:'holiday', time:'', note:''},
+  {date:'2027-05-18', title:'Eid Al-Adha', category:'holiday', time:'', note:''},
+  {date:'2027-05-19', title:'Eid Al-Adha', category:'holiday', time:'', note:''},
+  {date:'2027-05-20', title:'Eid Al-Adha', category:'holiday', time:'', note:''},
+  {date:'2027-05-23', title:'Field Trip: Sekem Farm (Year 5)', category:'trip', time:'', note:''},
+  {date:'2027-05-24', title:'Year 1 – Library Visit (Arabic)', category:'visit', time:'', note:''},
+  {date:'2027-06-06', title:'Islamic New Year', category:'holiday', time:'', note:''},
+  {date:'2027-06-12', title:'PYP Last Week begins', category:'event', time:'', note:''},
+  {date:'2027-06-20', title:'MYP Last Week begins', category:'event', time:'', note:''},
+  {date:'2027-06-26', title:'Year 5 – Exhibition & Graduation Day', category:'event', time:'', note:''},
+  {date:'2027-06-28', title:'In Service (staff training – no school)', category:'event', time:'', note:''},
+  {date:'2027-06-29', title:'In Service (staff training – no school)', category:'event', time:'', note:''},
+  {date:'2027-06-30', title:'In Service (staff training – no school)', category:'event', time:'', note:''},
+];
+const WD_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const WEEKEND_IDX = new Set([5,6]); // Fri, Sat
+const MIN_DATE = '2026-08-01';
+const MAX_DATE = '2027-07-31';
+
+/* ---------------- Firebase (shared data) + EmailJS (change alerts) ---------------- */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDsKv_jgX1YCNVl1tt7ockl3unfXAEW_8Q",
+  authDomain: "school-calendar-b1893.firebaseapp.com",
+  projectId: "school-calendar-b1893",
+  storageBucket: "school-calendar-b1893.firebasestorage.app",
+  messagingSenderId: "1047143624649",
+  appId: "1:1047143624649:web:9f524fda058d74a2e30218",
+  measurementId: "G-3ZE567V7Q8"
+};
+const EMAILJS_PUBLIC_KEY = 'aaqTFI8_hKiDHH-ei';
+const EMAILJS_SERVICE_ID = 'service_jffxkh5';
+const EMAILJS_TEMPLATE_ID = 'template_sx09i15';
+const NOTIFY_RECIPIENTS = [
+  'abeer.nader@alhodaschools.net',
+  'hoda.matar@alhodaschools.net',
+  'amina.eltemamy@alhodaschools.net',
+  'samaa.mohsen@alhodaschools.net',
+  'lubna.sorour@alhodaschools.net',
+  'hoda.soliman@alhodaschools.net',
+  'inas.salah@alhodaschools.net',
+  'sarah.elgendy@alhodaschools.net',
+  'hazem.elkholy@alhodaschools.net',
+];
+const CALENDAR_LINK = 'https://hoda-soliman.github.io/Alhoda-Calendar/';
+
+/* ---------------- state ---------------- */
+const state = {
+  view: 'year',
+  monthIdx: 0,
+  filter: new Set(Object.keys(CATEGORIES)),
+  events: [],      // {id, date, title, category, time, note}
+  dbApi: null,
+  localMode: false,
+};
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function ymd(y,m,d){ return `${y}-${pad2(m+1)}-${pad2(d)}`; }
+function todayObj(){ return new Date(); }
+function todayISO(){ const t=todayObj(); return ymd(t.getFullYear(), t.getMonth(), t.getDate()); }
+function todayISOClamped(){
+  const t = todayISO();
+  if (t < MIN_DATE) return MIN_DATE;
+  if (t > MAX_DATE) return MAX_DATE;
+  return t;
+}
+function inRange(iso){ return iso >= MIN_DATE && iso <= MAX_DATE; }
+
+const defaultMonthIdx = (() => {
+  const t = todayObj();
+  const idx = ACADEMIC_MONTHS.findIndex(m => m.year===t.getFullYear() && m.month===t.getMonth());
+  return idx === -1 ? 0 : idx;
+})();
+state.monthIdx = defaultMonthIdx;
+
+/* ---------------- edit lock (a deterrent, not real security — this link has no sign-in for anyone) ---------------- */
+const EDIT_PIN = 'hoda1011';
+let pendingUnlockAction = null;
+function isUnlocked(){
+  if (state._unlockedMem) return true;
+  try{ return sessionStorage.getItem('cal-unlocked') === '1'; }catch(e){ return false; }
+}
+function requireUnlock(action){
+  if (isUnlocked()){ action(); return; }
+  pendingUnlockAction = action;
+  document.getElementById('pinError').style.display = 'none';
+  document.getElementById('pinInput').value = '';
+  document.getElementById('unlockOverlay').classList.add('show');
+  setTimeout(()=>{ const el=document.getElementById('pinInput'); if(el) el.focus(); }, 50);
+}
+function submitUnlock(ev){
+  ev.preventDefault();
+  const val = document.getElementById('pinInput').value;
+  if (val === EDIT_PIN){
+    try{ sessionStorage.setItem('cal-unlocked','1'); }catch(e){}
+    state._unlockedMem = true;
+    document.getElementById('unlockOverlay').classList.remove('show');
+    const action = pendingUnlockAction; pendingUnlockAction = null;
+    if (action) action();
+  } else {
+    document.getElementById('pinError').style.display = 'block';
+  }
+}
+function closeUnlockModal(){
+  document.getElementById('unlockOverlay').classList.remove('show');
+  pendingUnlockAction = null;
+}
+
+/* ---------------- store: Firestore is the shared source of truth; this browser's ---------------- */
+/* storage is only a fallback for when the shared calendar can't be reached.       */
+const LOCAL_KEY = 'school-calendar-2026-27-events-v1';
+
+async function initStore(){
+  try{
+    if (typeof firebase === 'undefined') throw new Error('Firebase SDK did not load');
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    state.dbApi = firebase.firestore();
+    await seedIfEmpty();
+    subscribeEvents();
+  }catch(e){
+    console.error('Could not reach the shared calendar, showing a local copy instead:', e);
+    enableLocalMode();
+  }
+}
+async function seedIfEmpty(){
+  // Guards against re-seeding with a transaction on a small marker doc, so the
+  // very first person to open this page (from any device) fills the shared
+  // calendar with the school's default events exactly once.
+  const metaRef = state.dbApi.collection('meta').doc('status');
+  let shouldSeed = false;
+  await state.dbApi.runTransaction(async (tx) => {
+    const snap = await tx.get(metaRef);
+    if (!snap.exists || !snap.data().seeded){
+      tx.set(metaRef, { seeded:true, seededAt: firebase.firestore.FieldValue.serverTimestamp() });
+      shouldSeed = true;
+    }
+  });
+  if (shouldSeed){
+    const batch = state.dbApi.batch();
+    DEFAULT_EVENTS.forEach(e=>{
+      const ref = state.dbApi.collection('events').doc();
+      batch.set(ref, e);
+    });
+    await batch.commit();
+  }
+}
+function loadLocalEvents(){
+  try{
+    const raw = localStorage.getItem(LOCAL_KEY);
+    if (raw){ return JSON.parse(raw); }
+  }catch(e){ /* storage blocked (private mode, etc.) */ }
+  return null;
+}
+function saveLocalEvents(){
+  try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(state.events)); return true; }
+  catch(e){ return false; }
+}
+function enableLocalMode(){
+  state.localMode = true;
+  const existing = loadLocalEvents();
+  const n = document.getElementById('notice');
+  const t = document.getElementById('noticeText');
+  if (existing){
+    state.events = existing;
+  } else {
+    state.events = DEFAULT_EVENTS.map(e => ({ id: 'seed-' + Math.random().toString(36).slice(2), ...e }));
+    saveLocalEvents();
+  }
+  n.classList.add('show');
+  t.textContent = "Can't reach the shared calendar right now — showing a copy saved on this device. Changes made here stay on this device only until the connection comes back.";
+  renderAll();
+}
+function subscribeEvents(){
+  state.dbApi.collection('events').onSnapshot(
+    snap => {
+      state.events = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      document.getElementById('notice').classList.remove('show');
+      renderAll();
+    },
+    err => {
+      console.error('Lost connection to the shared calendar:', err);
+      enableLocalMode();
+    }
+  );
+}
+function notifyChange(action, data){
+  if (typeof emailjs === 'undefined' || !NOTIFY_RECIPIENTS.length) return;
+  const catLabel = CATEGORIES[data.category] ? CATEGORIES[data.category].label : (data.category || '');
+  NOTIFY_RECIPIENTS.forEach(email=>{
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      email: email,
+      action: action,
+      event_title: data.title || '',
+      event_date: data.date || '',
+      event_category: catLabel,
+      event_note: data.note || '',
+      calendar_link: CALENDAR_LINK,
+    }).catch(err => console.error('Notification email failed for', email, err));
+  });
+}
+async function storeAdd(data){
+  if (state.dbApi){
+    try{
+      await state.dbApi.collection('events').add(data);
+      notifyChange('added', data);
+      return true;
+    }
+    catch(e){ toast('Could not save that event.'); return false; }
+  }
+  const id = 'local-' + Math.random().toString(36).slice(2);
+  state.events.push({ id, ...data });
+  saveLocalEvents();
+  renderAll();
+  return true;
+}
+async function storeUpdate(id, data){
+  if (state.dbApi){
+    try{
+      await state.dbApi.doc('events/'+id).update(data);
+      notifyChange('updated', data);
+      return true;
+    }
+    catch(e){ toast('Could not save that change.'); return false; }
+  }
+  const i = state.events.findIndex(e => e.id===id);
+  if (i>-1) state.events[i] = { ...state.events[i], ...data };
+  saveLocalEvents();
+  renderAll();
+  return true;
+}
+async function storeDelete(id, priorData){
+  if (state.dbApi){
+    try{
+      await state.dbApi.doc('events/'+id).delete();
+      if (priorData) notifyChange('deleted', priorData);
+      return true;
+    }
+    catch(e){ toast('Could not delete that event.'); return false; }
+  }
+  state.events = state.events.filter(e => e.id!==id);
+  saveLocalEvents();
+  renderAll();
+  return true;
+}
+
+/* ---------------- toast ---------------- */
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+/* ---------------- legend ---------------- */
+function renderLegend(){
+  const el = document.getElementById('legend');
+  el.innerHTML = '';
+  Object.entries(CATEGORIES).forEach(([key,cfg])=>{
+    const btn = document.createElement('button');
+    btn.className = 'chip ' + (state.filter.has(key) ? 'on' : 'off');
+    btn.innerHTML = `<span class="dot" style="background:${catColor(key)}"></span>${cfg.label}`;
+    btn.onclick = () => {
+      if (state.filter.has(key)) state.filter.delete(key); else state.filter.add(key);
+      renderLegend(); renderAll();
+    };
+    el.appendChild(btn);
+  });
+}
+
+/* ---------------- view switching ---------------- */
+function setView(v){
+  state.view = v;
+  document.getElementById('tabYear').classList.toggle('active', v==='year');
+  document.getElementById('tabMonth').classList.toggle('active', v==='month');
+  document.getElementById('yearView').classList.toggle('hidden', v!=='year');
+  document.getElementById('monthView').classList.toggle('hidden', v!=='month');
+  if (v==='month') renderMonthView();
+}
+function stepMonth(delta){
+  state.monthIdx = Math.min(11, Math.max(0, state.monthIdx + delta));
+  renderMonthView();
+}
+function jumpToMonth(v){
+  state.monthIdx = parseInt(v,10);
+  renderMonthView();
+}
+function goToday(){
+  state.monthIdx = defaultMonthIdx;
+  setView('month');
+  renderMonthView();
+}
+
+/* ---------------- data helpers ---------------- */
+function filteredEvents(){
+  return state.events.filter(e => state.filter.has(e.category || 'event'));
+}
+function eventsByDate(){
+  const map = {};
+  filteredEvents().forEach(e=>{
+    (map[e.date] = map[e.date] || []).push(e);
+  });
+  Object.values(map).forEach(list => list.sort((a,b)=> (a.time||'').localeCompare(b.time||'')));
+  return map;
+}
+function daysInMonth(year, month){ return new Date(year, month+1, 0).getDate(); }
+
+/* ---------------- year view ---------------- */
+function renderYearView(){
+  const grid = document.getElementById('yearGrid');
+  grid.innerHTML = '';
+  const byDate = eventsByDate();
+  ACADEMIC_MONTHS.forEach((m, idx)=>{
+    const card = document.createElement('div');
+    card.className = 'mini-month';
+    card.onclick = () => { state.monthIdx = idx; setView('month'); };
+
+    const nDays = daysInMonth(m.year, m.month);
+    const firstDow = new Date(m.year, m.month, 1).getDay();
+    let count = 0;
+    for(let d=1; d<=nDays; d++){
+      const iso = ymd(m.year, m.month, d);
+      if (byDate[iso]) count += byDate[iso].length;
+    }
+
+    let html = `<header><h3>${m.label} ${m.year}</h3><span class="count">${count ? count+' event'+(count>1?'s':'') : ''}</span></header>`;
+    html += `<div class="mini-grid">`;
+    WD_LABELS.forEach(w => html += `<div class="mini-wd">${w[0]}</div>`);
+    for(let i=0;i<firstDow;i++) html += `<div class="mini-day out"></div>`;
+    const todayStr = todayISO();
+    for(let d=1; d<=nDays; d++){
+      const iso = ymd(m.year, m.month, d);
+      const dow = new Date(m.year, m.month, d).getDay();
+      const isWeekend = WEEKEND_IDX.has(dow);
+      const isToday = iso === todayStr;
+      const evs = byDate[iso] || [];
+      let dots = '';
+      if (evs.length){
+        dots = '<div class="mini-dots">' + evs.slice(0,4).map(e=>`<span style="background:${catColor(e.category)}"></span>`).join('') + '</div>';
+      }
+      html += `<div class="mini-day ${isWeekend?'weekend':''} ${isToday?'today':''}" title="${evs.map(e=>e.title).join(', ')}"
+                 onclick="event.stopPropagation(); jumpToDay('${iso}', ${idx})">${d}${dots}</div>`;
+    }
+    html += `</div>`;
+    card.innerHTML = html;
+    grid.appendChild(card);
+  });
+}
+function jumpToDay(iso, monthIdx){
+  state.monthIdx = monthIdx;
+  setView('month');
+  openDayModal(iso);
+}
+
+/* ---------------- month view ---------------- */
+function populateMonthSelect(){
+  const sel = document.getElementById('monthSelect');
+  sel.innerHTML = ACADEMIC_MONTHS.map((m,i)=>`<option value="${i}">${m.label} ${m.year}</option>`).join('');
+}
+function renderMonthView(){
+  const m = ACADEMIC_MONTHS[state.monthIdx];
+  document.getElementById('monthTitle').textContent = `${m.label} ${m.year}`;
+  document.getElementById('monthSelect').value = state.monthIdx;
+  document.querySelectorAll('.icon-btn')[0].disabled = state.monthIdx===0;
+  document.querySelectorAll('.icon-btn')[1].disabled = state.monthIdx===11;
+
+  const grid = document.getElementById('dayGrid');
+  grid.innerHTML = '';
+  const nDays = daysInMonth(m.year, m.month);
+  const firstDow = new Date(m.year, m.month, 1).getDay();
+  const byDate = eventsByDate();
+  const todayStr = todayISO();
+
+  // Weekday header cells live inside the SAME grid as the day cells so the
+  // columns are guaranteed to line up pixel-for-pixel (one grid, one set of
+  // column tracks, instead of two separately-sized grids stacked on top of
+  // each other).
+  WD_LABELS.forEach((w,i)=>{
+    const wd = document.createElement('div');
+    wd.className = 'wd-cell';
+    wd.textContent = w + (WEEKEND_IDX.has(i) ? ' · off' : '');
+    grid.appendChild(wd);
+  });
+
+  for(let i=0;i<firstDow;i++){
+    const cell = document.createElement('div');
+    cell.className = 'day-cell out';
+    grid.appendChild(cell);
+  }
+  for(let d=1; d<=nDays; d++){
+    const iso = ymd(m.year, m.month, d);
+    const dow = new Date(m.year, m.month, d).getDay();
+    const isWeekend = WEEKEND_IDX.has(dow);
+    const isToday = iso === todayStr;
+    const evs = byDate[iso] || [];
+
+    const cell = document.createElement('div');
+    cell.className = 'day-cell' + (isWeekend?' weekend':'');
+    cell.onclick = () => openDayModal(iso);
+
+    cell.innerHTML = `
+      <div class="day-num ${isToday?'today':''}">${d}</div>
+      <div class="chips">
+        ${evs.map(e=>`<div class="ev-chip" style="background:${catColor(e.category)}">${escapeHtml(e.title)}</div>`).join('')}
+      </div>`;
+    grid.appendChild(cell);
+  }
+  // Trailing filler cells so the last week row is a full 7 columns too,
+  // keeping every row the same shape.
+  const totalCells = firstDow + nDays;
+  const trailing = (7 - (totalCells % 7)) % 7;
+  for(let i=0;i<trailing;i++){
+    const cell = document.createElement('div');
+    cell.className = 'day-cell out';
+    grid.appendChild(cell);
+  }
+}
+
+/* ---------------- upcoming ---------------- */
+function renderUpcoming(){
+  const row = document.getElementById('upcomingRow');
+  const from = todayISOClamped();
+  const list = filteredEvents()
+    .filter(e => e.date >= from)
+    .sort((a,b)=> a.date.localeCompare(b.date) || (a.time||'').localeCompare(b.time||''))
+    .slice(0,8);
+  if (!list.length){
+    row.innerHTML = `<div class="up-empty">Nothing scheduled from here through July 2027 &mdash; add or import events to fill it in.</div>`;
+    return;
+  }
+  row.innerHTML = list.map(e=>{
+    const d = new Date(e.date+'T00:00:00');
+    const label = d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
+    return `<div class="up-card">
+      <div class="date">${label}</div>
+      <div class="cat-bar" style="background:${catColor(e.category)}"></div>
+      <div class="ttl">${escapeHtml(e.title)}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------------- render all ---------------- */
+function renderAll(){
+  renderLegend();
+  renderYearView();
+  if (state.view==='month') renderMonthView();
+  renderUpcoming();
+}
+
+/* ---------------- day / event modal ---------------- */
+function renderCatSelect(selected){
+  const el = document.getElementById('catSelect');
+  el.innerHTML = Object.entries(CATEGORIES).map(([key,cfg])=>`
+    <label class="cat-opt ${selected===key?'sel':''}" style="color:${catColor(key)}" data-key="${key}">
+      <input type="radio" name="evCat" value="${key}" ${selected===key?'checked':''} onchange="highlightCat('${key}')">
+      <span class="dot" style="background:${catColor(key)}"></span>${cfg.label}
+    </label>`).join('');
+}
+function highlightCat(key){
+  document.querySelectorAll('#catSelect .cat-opt').forEach(o=>{
+    o.classList.toggle('sel', o.dataset.key===key);
+  });
+}
+function openDayModal(iso){
+  document.getElementById('evDate').value = iso;
+  resetForm();
+  renderDayList();
+  document.getElementById('dayOverlay').classList.add('show');
+}
+function closeDayModal(){
+  document.getElementById('dayOverlay').classList.remove('show');
+}
+function renderDayList(){
+  const iso = document.getElementById('evDate').value;
+  const list = state.events.filter(e=>e.date===iso).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  const el = document.getElementById('evList');
+  if (!list.length){
+    el.innerHTML = `<div class="empty-note">No events on this day yet.</div>`;
+    return;
+  }
+  el.innerHTML = list.map(e=>`
+    <div class="ev-row" data-id="${e.id}">
+      <span class="swatch" style="background:${catColor(e.category)}"></span>
+      <div class="info">
+        <div class="t">${escapeHtml(e.title)}${e.time ? ' &middot; '+escapeHtml(e.time) : ''}</div>
+        ${e.note ? `<div class="n">${escapeHtml(e.note)}</div>` : ''}
+      </div>
+      <div class="acts">
+        <button type="button" class="btn btn-sm btn-ghost" onclick="editEvent('${e.id}')">Edit</button>
+        <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete(this,'${e.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+function editEvent(id){
+  const e = state.events.find(x=>x.id===id);
+  if (!e) return;
+  document.getElementById('editingId').value = id;
+  document.getElementById('evTitle').value = e.title || '';
+  document.getElementById('evTime').value = e.time || '';
+  document.getElementById('evNote').value = e.note || '';
+  renderCatSelect(e.category || 'event');
+  document.getElementById('formSubmitBtn').textContent = 'Save changes';
+  document.getElementById('cancelEditBtn').style.display = 'inline-flex';
+  document.getElementById('evTitle').focus();
+}
+function resetForm(){
+  document.getElementById('editingId').value = '';
+  document.getElementById('evTitle').value = '';
+  document.getElementById('evTime').value = '';
+  document.getElementById('evNote').value = '';
+  renderCatSelect('event');
+  document.getElementById('formSubmitBtn').textContent = 'Add event';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+}
+function confirmDelete(btn, id){
+  if (btn.dataset.confirm === '1'){
+    const ev = state.events.find(e=>e.id===id);
+    requireUnlock(() => storeDelete(id, ev).then(()=> toast('Event deleted.')));
+    return;
+  }
+  btn.dataset.confirm = '1';
+  const original = btn.textContent;
+  btn.textContent = 'Confirm?';
+  setTimeout(()=>{ if(btn){ btn.dataset.confirm=''; btn.textContent = original; } }, 2500);
+}
+async function submitEventForm(ev){
+  ev.preventDefault();
+  if (!isUnlocked()){ requireUnlock(() => submitEventForm(ev)); return; }
+  const date = document.getElementById('evDate').value;
+  const title = document.getElementById('evTitle').value.trim();
+  const catInput = document.querySelector('#catSelect input[name="evCat"]:checked');
+  const category = catInput ? catInput.value : 'event';
+  const time = document.getElementById('evTime').value;
+  const note = document.getElementById('evNote').value.trim();
+  if (!date || !title) return;
+  if (!inRange(date)){ toast('Date must be within Aug 2026 – Jul 2027.'); return; }
+
+  const editingId = document.getElementById('editingId').value;
+  const data = { date, title, category, time: time || '', note: note || '' };
+  const ok = editingId ? await storeUpdate(editingId, data) : await storeAdd(data);
+  if (ok){
+    toast(editingId ? 'Event updated.' : 'Event added.');
+    resetForm();
+    renderDayList();
+  }
+}
+
+/* ---------------- import ---------------- */
+function normalizeCategory(raw){
+  if (!raw) return 'event';
+  const s = raw.trim().toLowerCase();
+  for (const key of Object.keys(CATEGORIES)){
+    if (s === key || s === CATEGORIES[key].label.toLowerCase()) return key;
+  }
+  if (s.startsWith('hol')) return 'holiday';
+  if (s.startsWith('exam') || s.startsWith('assess')) return 'exam';
+  if (s.startsWith('trip') || s.startsWith('field')) return 'trip';
+  if (s.startsWith('visit')) return 'visit';
+  return 'event';
+}
+function parseDateFlexible(raw){
+  const s = raw.trim();
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return ymd(+m[1], +m[2]-1, +m[3]);
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return ymd(+m[3], +m[2]-1, +m[1]);
+  m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (m) return ymd(+m[3], +m[2]-1, +m[1]);
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) return ymd(d.getFullYear(), d.getMonth(), d.getDate());
+  return null;
+}
+let lastParsed = [];
+function parseImportPreview(){
+  const raw = document.getElementById('importText').value;
+  const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  const rows = [];
+  lines.forEach(line=>{
+    const parts = line.split(/\t|,/).map(p=>p.trim());
+    const dateRaw = parts[0] || '';
+    const title = parts[1] || '';
+    const catRaw = parts[2] || '';
+    const note = parts.slice(3).join(', ');
+    const iso = parseDateFlexible(dateRaw);
+    let error = null;
+    let duplicate = false;
+    if (!iso) error = 'Unrecognized date';
+    else if (!inRange(iso)) error = 'Outside Aug 2026 – Jul 2027';
+    else if (!title) error = 'Missing title';
+    else duplicate = state.events.some(e => e.date === iso && e.title.trim().toLowerCase() === title.trim().toLowerCase());
+    rows.push({ raw: line, date: iso, title, category: normalizeCategory(catRaw), note, error, duplicate });
+  });
+  lastParsed = rows;
+  const el = document.getElementById('previewList');
+  const dup = rows.filter(r=>!r.error && r.duplicate).length;
+  const ok = rows.filter(r=>!r.error && !r.duplicate).length;
+  const bad = rows.length - ok - dup;
+  document.getElementById('previewSummary').textContent = rows.length
+    ? `${ok} ready${dup ? ', '+dup+' already added (skipped)' : ''}${bad ? ', '+bad+' need fixing' : ''}`
+    : '';
+  el.style.display = rows.length ? 'block' : 'none';
+  el.innerHTML = rows.map(r=>{
+    if (r.error) return `<div class="preview-row bad"><span class="pdate">${escapeHtml(r.raw.slice(0,10))}</span><span>${r.error}: "${escapeHtml(r.raw)}"</span></div>`;
+    if (r.duplicate) return `<div class="preview-row" style="color:var(--ink-soft)"><span class="pdate">${r.date}</span><span>${escapeHtml(r.title)} <span>&middot; already on this calendar, will skip</span></span></div>`;
+    return `<div class="preview-row"><span class="pdate">${r.date}</span><span>${escapeHtml(r.title)} <span style="color:var(--ink-soft)">&middot; ${CATEGORIES[r.category].label}</span></span></div>`;
+  }).join('');
+  document.getElementById('confirmImportBtn').style.display = ok ? 'inline-flex' : 'none';
+}
+async function confirmImport(){
+  if (!isUnlocked()){ requireUnlock(() => confirmImport()); return; }
+  const rows = lastParsed.filter(r=>!r.error && !r.duplicate);
+  if (!rows.length) return;
+  const track = document.getElementById('importProgress');
+  const fill = document.getElementById('importProgressFill');
+  track.classList.add('show');
+  document.getElementById('confirmImportBtn').disabled = true;
+  let done = 0;
+  for (const r of rows){
+    await storeAdd({ date:r.date, title:r.title, category:r.category, time:'', note:r.note||'' });
+    done++;
+    fill.style.width = Math.round(done/rows.length*100) + '%';
+  }
+  document.getElementById('confirmImportBtn').disabled = false;
+  toast(`Imported ${done} event${done>1?'s':''}.`);
+  closeImportModal();
+}
+function openImportModal(){
+  document.getElementById('importText').value = '';
+  document.getElementById('previewList').style.display = 'none';
+  document.getElementById('previewList').innerHTML = '';
+  document.getElementById('previewSummary').textContent = '';
+  document.getElementById('confirmImportBtn').style.display = 'none';
+  document.getElementById('importProgress').classList.remove('show');
+  document.getElementById('importProgressFill').style.width = '0%';
+  document.getElementById('importOverlay').classList.add('show');
+}
+function closeImportModal(){
+  document.getElementById('importOverlay').classList.remove('show');
+}
+
+/* ---------------- export (manual backup helper) ---------------- */
+function buildExportText(){
+  const rows = [...state.events]
+    .slice()
+    .sort((a,b)=> a.date.localeCompare(b.date));
+  // Tab-separated so commas inside a title or note never get mistaken for
+  // column breaks when this text is pasted back into Import events.
+  return rows.map(e => [
+    e.date,
+    (e.title||'').replace(/\t/g,' '),
+    (CATEGORIES[e.category] ? CATEGORIES[e.category].label : 'Event'),
+    (e.note||'').replace(/\t/g,' ')
+  ].join('\t')).join('\n');
+}
+function openExportModal(){
+  const text = buildExportText();
+  document.getElementById('exportText').value = text;
+  document.getElementById('exportCount').textContent = state.events.length;
+  document.getElementById('exportCopyStatus').textContent = '';
+  document.getElementById('exportOverlay').classList.add('show');
+}
+function closeExportModal(){
+  document.getElementById('exportOverlay').classList.remove('show');
+}
+async function copyExportText(){
+  const ta = document.getElementById('exportText');
+  ta.select();
+  let ok = false;
+  try{
+    await navigator.clipboard.writeText(ta.value);
+    ok = true;
+  }catch(e){
+    try{ ok = document.execCommand('copy'); }catch(e2){ ok = false; }
+  }
+  document.getElementById('exportCopyStatus').textContent = ok ? 'Copied!' : 'Select the text above and copy it manually.';
+  if (ok) toast('Events copied — paste them into Import events on the other copy.');
+}
+
+/* ---------------- utils ---------------- */
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+document.addEventListener('keydown', (e)=>{
+  if (e.key === 'Escape'){ closeDayModal(); closeImportModal(); closeUnlockModal(); }
+});
+
+/* ---------------- init ---------------- */
+if (typeof emailjs !== 'undefined'){
+  try{ emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); }catch(e){ console.error('EmailJS init failed', e); }
+}
+populateMonthSelect();
+renderCatSelect('event');
+renderAll();
+initStore();
+</script>
+</body>
+</html>
