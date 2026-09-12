@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Academic Calendar 2026-27</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600;6..72,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;800&family=PT+Sans:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
   :root{
     --paper:#F4F6F3;
@@ -14,11 +14,11 @@
     --ink-soft:#5B6B65;
     --line:#DBE2DC;
     --line-soft:#E9EDE8;
-    --accent:#1F5C52;
-    --accent-ink:#0F332D;
+    --accent:#771111;
+    --accent-ink:#3D0808;
     --accent-contrast:#FFFFFF;
     --weekend:#EBEFE9;
-    --today-ring:#C1392B;
+    --today-ring:#8A6D00;
     --shadow:rgba(20,30,26,0.10);
     --notice:#9A6B12;
     --notice-bg:#FBF1DE;
@@ -37,11 +37,11 @@
       --ink-soft:#9FB2AA;
       --line:#2B3A34;
       --line-soft:#24322C;
-      --accent:#4FB39E;
-      --accent-ink:#DFF4EE;
-      --accent-contrast:#0B1512;
+      --accent:#B33939;
+      --accent-ink:#F7DEDE;
+      --accent-contrast:#FFFFFF;
       --weekend:#1A2622;
-      --today-ring:#E2685A;
+      --today-ring:#B8860B;
       --shadow:rgba(0,0,0,0.45);
       --notice:#E8C77E;
       --notice-bg:#2E2712;
@@ -60,11 +60,11 @@
     --ink-soft:#9FB2AA;
     --line:#2B3A34;
     --line-soft:#24322C;
-    --accent:#4FB39E;
-    --accent-ink:#DFF4EE;
-    --accent-contrast:#0B1512;
+    --accent:#B33939;
+    --accent-ink:#F7DEDE;
+    --accent-contrast:#FFFFFF;
     --weekend:#1A2622;
-    --today-ring:#E2685A;
+    --today-ring:#B8860B;
     --shadow:rgba(0,0,0,0.45);
     --notice:#E8C77E;
     --notice-bg:#2E2712;
@@ -81,15 +81,28 @@
     margin:0;
     background:var(--paper);
     color:var(--ink);
-    font-family:'Public Sans', -apple-system, 'Segoe UI', sans-serif;
+    font-family:'PT Sans', -apple-system, 'Segoe UI', sans-serif;
     -webkit-font-smoothing:antialiased;
   }
-  h1,h2,h3{ font-family:'Newsreader', Georgia, serif; text-wrap:balance; margin:0; }
+  h1,h2,h3{ font-family:'Raleway', -apple-system, 'Segoe UI', sans-serif; font-weight:700; text-wrap:balance; margin:0; }
   .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums; }
   button{ font-family:inherit; }
   ::selection{ background:var(--accent); color:var(--accent-contrast); }
 
   .shell{ max-width:1240px; margin:0 auto; padding:28px 24px 64px; }
+
+  /* ---------- brand bar (school identity) ---------- */
+  .brand-bar{
+    display:flex; align-items:center; gap:14px;
+    background:var(--accent); color:#fff;
+    padding:14px 24px;
+  }
+  .brand-bar img{ height:42px; width:auto; display:block; flex:none; }
+  .brand-bar .brand-name{
+    font-family:'Raleway', -apple-system, 'Segoe UI', sans-serif;
+    font-weight:700; font-size:18px; letter-spacing:.01em; line-height:1.25;
+  }
+  .brand-bar .brand-name small{ display:block; font-weight:500; font-size:12px; opacity:.85; letter-spacing:.03em; }
 
   /* ---------- header ---------- */
   header{
@@ -321,6 +334,10 @@
 </style>
 </head>
 <body>
+<div class="brand-bar">
+  <img src="https://alhodaschools.com/logo-white.svg" alt="Al Hoda International School logo">
+  <div class="brand-name">Al Hoda International School<small>Academic Calendar</small></div>
+</div>
 <div class="shell">
   <header>
     <div class="title-block">
