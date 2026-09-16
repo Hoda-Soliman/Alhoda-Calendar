@@ -783,10 +783,10 @@ function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 async function notifyChange(action, data){
   if (typeof emailjs === 'undefined' || !NOTIFY_RECIPIENTS.length) return;
   const catLabel = CATEGORIES[data.category] ? CATEGORIES[data.category].label : (data.category || '');
-  // EmailJS's free plan rejects overlapping requests (429 "Connection Limit
-  // Exceeded") if all recipients are sent at once, so these go out one at a
-  // time with a short gap between them instead of in parallel.
-  for (const email of NOTIFY_RECIPIENTS){
+  // EmailJS's free plan counts every emailjs.send() call as one request,
+  // no matter how many people it reaches - so all recipients are combined
+  // into one comma-separated address and sent in a single request instead.
+  for (const email of [NOTIFY_RECIPIENTS.join(',')]){
     try{
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
         email: email,
