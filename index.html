@@ -639,6 +639,7 @@ const NOTIFY_RECIPIENTS = [
   'amira.eldegwi@alhodaschools.net', 'sara.sayed@alhodaschools.net', 'raghda.hussein@alhodaschools.net',
 ];
 const CALENDAR_LINK = 'https://hoda-soliman.github.io/Alhoda-Calendar/';
+const NOTIFY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbxVm4cPUkqJUEuPjjShKbQl5_xMbLKPbNPHSaRN3e41pDbPGqbFEu4LyJaEgxNeXlTVZA/exec';
 
 /* ---------------- state ---------------- */
 const state = {
@@ -781,26 +782,25 @@ function subscribeEvents(){
 }
 function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 async function notifyChange(action, data){
-  if (typeof emailjs === 'undefined' || !NOTIFY_RECIPIENTS.length) return;
+  if (!NOTIFY_RECIPIENTS.length) return;
   const catLabel = CATEGORIES[data.category] ? CATEGORIES[data.category].label : (data.category || '');
-  // EmailJS's free plan counts every emailjs.send() call as one request,
-  // no matter how many people it reaches - so all recipients are combined
-  // into one comma-separated address and sent in a single request instead.
-  for (const email of [NOTIFY_RECIPIENTS.join(',')]){
-    try{
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        email: email,
+  // Sent via a small Google Apps Script web app running on Hoda's own Gmail,
+  // instead of EmailJS (whose free plan's monthly request quota kept running out).
+  try{
+    await fetch(NOTIFY_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({
         action: action,
         event_title: data.title || '',
         event_date: data.date || '',
         event_category: catLabel,
         event_note: data.note || '',
         calendar_link: CALENDAR_LINK,
-      });
-    }catch(err){
-      console.error('Notification email failed for', email, err);
-    }
-    await sleep(600);
+      }),
+    });
+  }catch(err){
+    console.error('Notification email failed', err);
   }
 }
 async function storeAdd(data){
