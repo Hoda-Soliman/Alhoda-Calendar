@@ -28,6 +28,7 @@
     --cat-event:#1C5E86;
     --cat-trip:#2C7A48;
     --cat-visit:#6A4C8C;
+    --cat-lesson:#0F766E;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -51,6 +52,7 @@
       --cat-event:#5CA6D6;
       --cat-trip:#5FAE79;
       --cat-visit:#A98FD6;
+      --cat-lesson:#3FBFB0;
     }
   }
   :root[data-theme="dark"]{
@@ -74,6 +76,7 @@
     --cat-event:#5CA6D6;
     --cat-trip:#5FAE79;
     --cat-visit:#A98FD6;
+    --cat-lesson:#3FBFB0;
   }
 
   *{ box-sizing:border-box; }
@@ -519,7 +522,8 @@ const CATEGORIES = {
   event:   { label:'Event',    varc:'--cat-event' },
   trip:    { label:'Trip',     varc:'--cat-trip' },
   visit:   { label:'Visit',    varc:'--cat-visit' },
-};
+
+  lesson:  { label:'Lesson Activity', varc:'--cat-lesson' },};
 function catColor(key){
   const c = CATEGORIES[key] ? CATEGORIES[key].varc : '--cat-event';
   return getComputedStyle(document.documentElement).getPropertyValue(c).trim();
