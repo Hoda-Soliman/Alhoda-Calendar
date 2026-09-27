@@ -1116,8 +1116,8 @@ function renderWeekView(){
   endD.setDate(endD.getDate()+6);
   const sameMonth = startD.getMonth()===endD.getMonth() && startD.getFullYear()===endD.getFullYear();
   const title = sameMonth
-    ? `${startD.toLocaleDateString(undefined,{month:'short'})} ${startD.getDate()}â${endD.getDate()}, ${endD.getFullYear()}`
-    : `${startD.toLocaleDateString(undefined,{month:'short',day:'numeric'})} â ${endD.toLocaleDateString(undefined,{month:'short',day:'numeric'})}, ${endD.getFullYear()}`;
+    ? `${startD.toLocaleDateString(undefined,{month:'short'})} ${startD.getDate()}\u2013${endD.getDate()}, ${endD.getFullYear()}`
+    : `${startD.toLocaleDateString(undefined,{month:'short',day:'numeric'})} \u2013 ${endD.toLocaleDateString(undefined,{month:'short',day:'numeric'})}, ${endD.getFullYear()}`;
   document.getElementById('weekTitle').textContent = title;
 
   const grid = document.getElementById('weekGrid');
@@ -1125,7 +1125,7 @@ function renderWeekView(){
   WD_LABELS.forEach((w,i)=>{
     const wd = document.createElement('div');
     wd.className = 'wd-cell';
-    wd.textContent = w + (WEEKEND_IDX.has(i) ? ' Â· off' : '');
+    wd.textContent = w + (WEEKEND_IDX.has(i) ? ' \u00b7 off' : '');
     grid.appendChild(wd);
   });
   for(let i=0;i<7;i++){
