@@ -248,18 +248,6 @@
   .week-grid .day-cell{ height:auto; min-height:220px; }
   .week-grid .ev-chip{ white-space:normal; }
 
-  .day-agenda{ display:flex; flex-direction:column; gap:10px; max-width:560px; }
-  .agenda-row{
-    display:flex; align-items:center; gap:12px; background:var(--paper-raised); border:1px solid var(--line);
-    border-radius:12px; padding:12px 14px; cursor:pointer; box-shadow:0 1px 2px var(--shadow);
-  }
-  .agenda-row:hover{ border-color:var(--accent); }
-  .agenda-row .cat-bar{ width:4px; align-self:stretch; border-radius:2px; flex:none; }
-  .agenda-main{ flex:1; min-width:0; }
-  .agenda-title{ font-size:14.5px; font-weight:600; }
-  .agenda-note{ font-size:12.5px; color:var(--ink-soft); margin-top:3px; }
-  .agenda-time{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft); flex:none; }
-
   /* ---------- modals ---------- */
   .overlay{
     position:fixed; inset:0; background:rgba(10,16,14,.45); display:none;
@@ -368,7 +356,6 @@
         <button id="tabYear" class="active" onclick="setView('year')">Year</button>
         <button id="tabMonth" onclick="setView('month')">Month</button>
         <button id="tabWeek" onclick="setView('week')">Week</button>
-        <button id="tabDay" onclick="setView('day')">Day</button>
       </div>
       <button class="btn btn-primary" onclick="openImportModal()">Import events</button>
       <button class="btn" onclick="openExportModal()">Export events</button>
@@ -412,21 +399,6 @@
       </div>
     </div>
     <div class="week-grid" id="weekGrid"></div>
-  </section>
-
-  <section id="dayView" class="hidden">
-    <div class="month-nav">
-      <div class="left">
-        <button class="icon-btn" onclick="stepDay(-1)" aria-label="Previous day">&larr;</button>
-        <h2 id="dayTitle"></h2>
-        <button class="icon-btn" onclick="stepDay(1)" aria-label="Next day">&rarr;</button>
-      </div>
-      <div class="left">
-        <button class="btn btn-sm" onclick="goToday()">Today</button>
-        <button class="btn btn-primary btn-sm" onclick="openDayModal(state.focusDate)">+ Add event</button>
-      </div>
-    </div>
-    <div class="day-agenda" id="dayAgenda"></div>
   </section>
 
   <div class="upcoming">
@@ -947,14 +919,11 @@ function setView(v){
   document.getElementById('tabYear').classList.toggle('active', v==='year');
   document.getElementById('tabMonth').classList.toggle('active', v==='month');
   document.getElementById('tabWeek').classList.toggle('active', v==='week');
-  document.getElementById('tabDay').classList.toggle('active', v==='day');
   document.getElementById('yearView').classList.toggle('hidden', v!=='year');
   document.getElementById('monthView').classList.toggle('hidden', v!=='month');
   document.getElementById('weekView').classList.toggle('hidden', v!=='week');
-  document.getElementById('dayView').classList.toggle('hidden', v!=='day');
   if (v==='month') renderMonthView();
   if (v==='week') renderWeekView();
-  if (v==='day') renderDayView();
 }
 function stepMonth(delta){
   state.monthIdx = Math.min(11, Math.max(0, state.monthIdx + delta));
@@ -964,10 +933,6 @@ function stepWeek(delta){
   state.focusDate = clampISO(addDays(state.focusDate, delta*7));
   renderWeekView();
 }
-function stepDay(delta){
-  state.focusDate = clampISO(addDays(state.focusDate, delta));
-  renderDayView();
-}
 function jumpToMonth(v){
   state.monthIdx = parseInt(v,10);
   renderMonthView();
@@ -976,7 +941,6 @@ function goToday(){
   state.monthIdx = defaultMonthIdx;
   state.focusDate = todayISOClamped();
   if (state.view==='week'){ renderWeekView(); }
-  else if (state.view==='day'){ renderDayView(); }
   else { setView('month'); renderMonthView(); }
 }
 
@@ -1148,30 +1112,6 @@ function renderWeekView(){
   }
 }
 
-/* ---------------- day view ---------------- */
-function renderDayView(){
-  const iso = state.focusDate;
-  const outOfRange = !inRange(iso);
-  document.getElementById('dayTitle').textContent = new Date(iso+'T00:00:00').toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric', year:'numeric'});
-
-  const byDate = eventsByDate();
-  const evs = byDate[iso] || [];
-  const wrap = document.getElementById('dayAgenda');
-  if (!evs.length){
-    wrap.innerHTML = `<div class="up-empty">Nothing scheduled for this day${outOfRange ? '' : ' &mdash; click "+ Add event" to add one'}.</div>`;
-    return;
-  }
-  wrap.innerHTML = evs.map(e => `
-    <div class="agenda-row" onclick="openDayModal('${iso}')">
-      <div class="cat-bar" style="background:${catColor(e.category)}"></div>
-      <div class="agenda-main">
-        <div class="agenda-title">${escapeHtml(e.title)}</div>
-        ${e.note ? `<div class="agenda-note">${escapeHtml(e.note)}</div>` : ''}
-      </div>
-      ${e.time ? `<div class="agenda-time">${escapeHtml(e.time)}</div>` : ''}
-    </div>`).join('');
-}
-
 /* ---------------- upcoming ---------------- */
 function renderUpcoming(){
   const row = document.getElementById('upcomingRow');
@@ -1201,7 +1141,6 @@ function renderAll(){
   renderYearView();
   if (state.view==='month') renderMonthView();
   if (state.view==='week') renderWeekView();
-  if (state.view==='day') renderDayView();
   renderUpcoming();
 }
 
