@@ -29,6 +29,7 @@
     --cat-trip:#2C7A48;
     --cat-visit:#6A4C8C;
     --cat-lesson:#C9A600;
+    --cat-prep:#5B6B65;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -53,6 +54,7 @@
       --cat-trip:#5FAE79;
       --cat-visit:#A98FD6;
       --cat-lesson:#F0CB3E;
+      --cat-prep:#9FB2AA;
     }
   }
   :root[data-theme="dark"]{
@@ -542,7 +544,8 @@ const CATEGORIES = {
   trip:    { label:'Trip',     varc:'--cat-trip' },
   visit:   { label:'Visit',    varc:'--cat-visit' },
 
-  lesson:  { label:'Lesson Activity', varc:'--cat-lesson' },};
+  lesson:  { label:'Lesson Activity', varc:'--cat-lesson' },
+  prep:    { label:'Under Preparation', varc:'--cat-prep' },};
 function catColor(key){
   const c = CATEGORIES[key] ? CATEGORIES[key].varc : '--cat-event';
   return getComputedStyle(document.documentElement).getPropertyValue(c).trim();
@@ -822,6 +825,7 @@ function subscribeEvents(){
 function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 async function notifyChange(action, data){
   if (!NOTIFY_RECIPIENTS.length) return;
+  if (data.category === 'prep') return; // Under Preparation: no notification until it's a real event
   const catLabel = CATEGORIES[data.category] ? CATEGORIES[data.category].label : (data.category || '');
   // Sent via a small Google Apps Script web app running on Hoda's own Gmail,
   // instead of EmailJS (whose free plan's monthly request quota kept running out).
