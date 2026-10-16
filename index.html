@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Academic Calendar 2026-27</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@500;600;700;800&family=PT+Sans:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
@@ -816,12 +819,46 @@ function subscribeEvents(){
       state.events = snap.docs.map(d => ({ id:d.id, ...d.data() }));
       document.getElementById('notice').classList.remove('show');
       renderAll();
+      syncLocalEventsToShared();
     },
     err => {
       console.error('Lost connection to the shared calendar:', err);
       enableLocalMode();
     }
   );
+}
+
+// If this device previously fell back to a local-only copy (because it could not
+// reach the shared calendar) and has now reconnected, push any events that were
+// added while offline up to the shared calendar instead of leaving them stuck
+// on this device only.
+let localSyncDone = false;
+async function syncLocalEventsToShared(){
+  if (localSyncDone) return;
+  localSyncDone = true;
+  const existing = loadLocalEvents();
+  if (!existing) return;
+  const pending = existing.filter(e => typeof e.id === 'string' && e.id.indexOf('local-') === 0);
+  if (!pending.length) return;
+  let recovered = 0;
+  for (const ev of pending){
+    const { id, ...data } = ev;
+    try{
+      await state.dbApi.collection('events').add(data);
+      notifyChange('added', data);
+      recovered++;
+    }catch(e){
+      console.error('Could not recover an offline-saved event:', e);
+    }
+  }
+  if (recovered){
+    // state.events already holds the fresh shared copy at this point, so saving it
+    // now refreshes the on-device backup and drops the recovered local-only entries.
+    saveLocalEvents();
+    toast(recovered === 1
+      ? 'Recovered 1 event that was saved offline — added to the shared calendar.'
+      : `Recovered ${recovered} events that were saved offline — added to the shared calendar.`);
+  }
 }
 function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 async function notifyChange(action, data){
