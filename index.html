@@ -288,6 +288,12 @@
   .cat-ev-list .ev-row .d{ font-size:11px; font-weight:700; color:var(--ink-soft); margin-right:8px; white-space:nowrap; }
   .cat-ev-list .ev-row.is-today{ border-color:var(--today-ring); box-shadow:0 0 0 1px var(--today-ring) inset; }
   .cat-ev-list .ev-row.is-next{ border-color:var(--ink-soft); }
+  .cat-month-head{ font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); padding:10px 2px 4px; border-bottom:1px solid var(--line); margin:4px 0 8px; }
+  .cat-month-head:first-child{ margin-top:0; }
+  .cat-range-label{ font-size:12px; color:var(--ink-soft); font-weight:600; margin:-4px 0 12px; }
+  .print-only-head{ display:none; }
+  .print-only-head .ttl{ font-size:20px; font-weight:800; margin-bottom:2px; }
+  .print-only-head .sub{ font-size:12px; color:#555; margin-bottom:16px; }
   @media print{
     body.print-cat-list > *:not(#catListOverlay){ display:none !important; }
     body.print-cat-list{ background:#fff !important; }
@@ -297,6 +303,9 @@
     .cat-ev-list{ max-height:none !important; overflow:visible !important; }
     .cat-ev-list .ev-row{ break-inside:avoid; border-color:#ccc !important; }
     .cat-ev-list .ev-row.is-today, .cat-ev-list .ev-row.is-next{ box-shadow:none !important; }
+    .cat-date-filter{ display:none !important; }
+    .print-only-head{ display:block !important; }
+    .cat-month-head{ break-after:avoid; }
   }
 
   .field{ margin-bottom:12px; }
@@ -488,6 +497,21 @@
       </div>
     </div>
     <div class="modal-body">
+      <div class="print-only-head" id="printOnlyHead"></div>
+      <div class="cat-date-filter">
+        <div class="row2" style="margin-bottom:10px;align-items:end;">
+          <div class="field" style="margin-bottom:0;">
+            <label for="catFrom">From</label>
+            <input type="date" id="catFrom" min="2026-08-01" max="2027-07-31" onchange="renderCatList(currentCatKey)">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label for="catTo">To</label>
+            <input type="date" id="catTo" min="2026-08-01" max="2027-07-31" onchange="renderCatList(currentCatKey)">
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-ghost" onclick="clearCatDateFilter()" style="margin-bottom:10px;">Show all dates</button>
+      </div>
+      <div class="cat-range-label" id="catRangeLabel"></div>
       <div class="ev-list cat-ev-list" id="catEvList"></div>
     </div>
   </div>
@@ -1224,9 +1248,13 @@ function renderAll(){
 }
 
 /* ---------------- category list modal ---------------- */
+let currentCatKey = null;
 function openCatListModal(key){
+  currentCatKey = key;
   const cfg = CATEGORIES[key];
   document.getElementById('catListTitle').textContent = cfg ? cfg.label : 'Events';
+  document.getElementById('catFrom').value = '';
+  document.getElementById('catTo').value = '';
   renderCatList(key);
   document.getElementById('catListOverlay').classList.add('show');
   requestAnimationFrame(() => {
@@ -1238,7 +1266,27 @@ function openCatListModal(key){
 function closeCatListModal(){
   document.getElementById('catListOverlay').classList.remove('show');
 }
+function clearCatDateFilter(){
+  document.getElementById('catFrom').value = '';
+  document.getElementById('catTo').value = '';
+  renderCatList(currentCatKey);
+}
+function catListRangeText(){
+  const fromVal = document.getElementById('catFrom').value;
+  const toVal = document.getElementById('catTo').value;
+  const fmt = iso => { const d = new Date(iso+'T00:00:00'); return d.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'}); };
+  if (!fromVal && !toVal) return 'All dates';
+  if (fromVal && toVal) return fmt(fromVal) + ' \u2013 ' + fmt(toVal);
+  if (fromVal) return 'From ' + fmt(fromVal);
+  return 'Through ' + fmt(toVal);
+}
 function printCatList(){
+  const cfg = CATEGORIES[currentCatKey];
+  const label = cfg ? cfg.label : (document.getElementById('catListTitle').textContent || 'Events');
+  const printedOn = new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+  document.getElementById('printOnlyHead').innerHTML =
+    '<div class="ttl">' + escapeHtml(label) + '</div>' +
+    '<div class="sub">' + escapeHtml(catListRangeText()) + ' &middot; Printed ' + escapeHtml(printedOn) + '</div>';
   document.body.classList.add('print-cat-list');
   const done = () => { document.body.classList.remove('print-cat-list'); window.removeEventListener('afterprint', done); };
   window.addEventListener('afterprint', done);
@@ -1249,29 +1297,42 @@ function renderCatList(key){
   const el = document.getElementById('catEvList');
   const cfg = CATEGORIES[key];
   const today = todayISO();
-  const list = state.events
+  const fromVal = document.getElementById('catFrom').value;
+  const toVal = document.getElementById('catTo').value;
+  document.getElementById('catRangeLabel').textContent = catListRangeText();
+  let list = state.events
     .filter(e => (e.category || 'event') === key)
     .slice()
     .sort((a,b) => (a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+  if (fromVal) list = list.filter(e => e.date >= fromVal);
+  if (toVal) list = list.filter(e => e.date <= toVal);
   if (!list.length){
-    el.innerHTML = '<div class="empty-note">No ' + (cfg?cfg.label:key).toLowerCase() + ' events yet.</div>';
+    el.innerHTML = '<div class="empty-note">No ' + (cfg?cfg.label:key).toLowerCase() + ' events in this range.</div>';
     return;
   }
   const hasToday = list.some(e => e.date === today);
   const nextIdx = hasToday ? -1 : list.findIndex(e => e.date > today);
-  el.innerHTML = list.map((e,i)=>{
+  let html = '';
+  let lastMonthKey = '';
+  list.forEach((e,i) => {
+    const d = new Date(e.date+'T00:00:00');
+    const monthKey = d.getFullYear()+'-'+d.getMonth();
+    if (monthKey !== lastMonthKey){
+      lastMonthKey = monthKey;
+      html += '<div class="cat-month-head">' + d.toLocaleDateString(undefined, {month:'long', year:'numeric'}) + '</div>';
+    }
     const isToday = e.date === today;
     const isNext = !hasToday && i === nextIdx;
-    const d = new Date(e.date+'T00:00:00');
-    const label = d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric', year:'numeric'});
+    const label = d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
     const rowClass = 'ev-row' + (isToday?' is-today':'') + (isNext?' is-next':'');
     const timePart = e.time ? (' &middot; '+escapeHtml(e.time)) : '';
     const notePart = e.note ? ('<div class="n">'+escapeHtml(e.note)+'</div>') : '';
-    return '<div class="'+rowClass+'" onclick="closeCatListModal(); openDayModal(&quot;'+e.date+'&quot;);">' +
+    html += '<div class="'+rowClass+'" onclick="closeCatListModal(); openDayModal(&quot;'+e.date+'&quot;);">' +
       '<span class="swatch" style="background:'+catColor(e.category)+'"></span>' +
       '<div class="info"><div class="t"><span class="d">'+label+'</span>'+escapeHtml(e.title)+timePart+'</div>'+notePart+'</div>' +
     '</div>';
-  }).join('');
+  });
+  el.innerHTML = html;
 }
 
 /* ---------------- day / event modal ---------------- */
