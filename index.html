@@ -33,6 +33,7 @@
     --cat-visit:#5E20AA;
     --cat-lesson:#B1701A;
     --cat-prep:#B01060;
+    --cat-intl:#12ADB1;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -58,6 +59,7 @@
       --cat-visit:#914CDF;
       --cat-lesson:#A55826;
       --cat-prep:#CE6F91;
+      --cat-intl:#97E9EB;
     }
   }
   :root[data-theme="dark"]{
@@ -83,6 +85,7 @@
     --cat-visit:#914CDF;
     --cat-lesson:#A55826;
     --cat-prep:#CE6F91;
+    --cat-intl:#97E9EB;
   }
 
   *{ box-sizing:border-box; }
@@ -279,6 +282,12 @@
   .ev-row .info .n{ font-size:11.5px; color:var(--ink-soft); }
   .ev-row .acts{ display:flex; gap:6px; flex:none; }
   .empty-note{ color:var(--ink-soft); font-size:13px; padding:6px 2px 14px; }
+  .cat-ev-list{ max-height:min(60vh,460px); overflow-y:auto; padding-right:2px; }
+  .cat-ev-list .ev-row{ cursor:pointer; }
+  .cat-ev-list .ev-row:hover{ border-color:var(--ink-soft); }
+  .cat-ev-list .ev-row .d{ font-size:11px; font-weight:700; color:var(--ink-soft); margin-right:8px; white-space:nowrap; }
+  .cat-ev-list .ev-row.is-today{ border-color:var(--today-ring); box-shadow:0 0 0 1px var(--today-ring) inset; }
+  .cat-ev-list .ev-row.is-next{ border-color:var(--ink-soft); }
 
   .field{ margin-bottom:12px; }
   .field > label{ display:block; font-size:11.5px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
@@ -458,6 +467,19 @@
   </div>
 </div>
 
+<!-- Category list modal -->
+<div class="overlay" id="catListOverlay" onclick="if(event.target===this) closeCatListModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="catListTitle">Events</h3>
+      <button class="close-x" onclick="closeCatListModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="ev-list cat-ev-list" id="catEvList"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Import modal -->
 <div class="overlay" id="importOverlay" onclick="if(event.target===this) closeImportModal()">
   <div class="modal" style="max-width:560px;">
@@ -549,7 +571,9 @@ const CATEGORIES = {
   visit:   { label:'Visit',    varc:'--cat-visit' },
 
   lesson:  { label:'Lesson Activity', varc:'--cat-lesson' },
-  prep:    { label:'Under Preparation', varc:'--cat-prep' },};
+  prep:    { label:'Under Preparation', varc:'--cat-prep' },
+  intl:    { label:'International Day', varc:'--cat-intl' },
+};
 function catColor(key){
   const c = CATEGORIES[key] ? CATEGORIES[key].varc : '--cat-event';
   return getComputedStyle(document.documentElement).getPropertyValue(c).trim();
@@ -864,6 +888,7 @@ function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 async function notifyChange(action, data){
   if (!NOTIFY_RECIPIENTS.length) return;
   if (data.category === 'prep') return; // Under Preparation: no notification until it's a real event
+  if (data.category === 'intl') return; // International Day: informational only, no notification
   const catLabel = CATEGORIES[data.category] ? CATEGORIES[data.category].label : (data.category || '');
   // Sent via a small Google Apps Script web app running on Hoda's own Gmail,
   // instead of EmailJS (whose free plan's monthly request quota kept running out).
@@ -946,12 +971,10 @@ function renderLegend(){
   el.innerHTML = '';
   Object.entries(CATEGORIES).forEach(([key,cfg])=>{
     const btn = document.createElement('button');
-    btn.className = 'chip ' + (state.filter.has(key) ? 'on' : 'off');
+    btn.className = 'chip on';
+    btn.title = 'View all ' + cfg.label + ' events';
     btn.innerHTML = `<span class="dot" style="background:${catColor(key)}"></span>${cfg.label}`;
-    btn.onclick = () => {
-      if (state.filter.has(key)) state.filter.delete(key); else state.filter.add(key);
-      renderLegend(); renderAll();
-    };
+    btn.onclick = () => openCatListModal(key);
     el.appendChild(btn);
   });
 }
@@ -1185,6 +1208,50 @@ function renderAll(){
   if (state.view==='month') renderMonthView();
   if (state.view==='week') renderWeekView();
   renderUpcoming();
+}
+
+/* ---------------- category list modal ---------------- */
+function openCatListModal(key){
+  const cfg = CATEGORIES[key];
+  document.getElementById('catListTitle').textContent = cfg ? cfg.label : 'Events';
+  renderCatList(key);
+  document.getElementById('catListOverlay').classList.add('show');
+  requestAnimationFrame(() => {
+    const list = document.getElementById('catEvList');
+    const marker = list.querySelector('.is-today') || list.querySelector('.is-next');
+    if (marker) marker.scrollIntoView({block:'center'});
+  });
+}
+function closeCatListModal(){
+  document.getElementById('catListOverlay').classList.remove('show');
+}
+function renderCatList(key){
+  const el = document.getElementById('catEvList');
+  const cfg = CATEGORIES[key];
+  const today = todayISO();
+  const list = state.events
+    .filter(e => (e.category || 'event') === key)
+    .slice()
+    .sort((a,b) => (a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+  if (!list.length){
+    el.innerHTML = '<div class="empty-note">No ' + (cfg?cfg.label:key).toLowerCase() + ' events yet.</div>';
+    return;
+  }
+  const hasToday = list.some(e => e.date === today);
+  const nextIdx = hasToday ? -1 : list.findIndex(e => e.date > today);
+  el.innerHTML = list.map((e,i)=>{
+    const isToday = e.date === today;
+    const isNext = !hasToday && i === nextIdx;
+    const d = new Date(e.date+'T00:00:00');
+    const label = d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric', year:'numeric'});
+    const rowClass = 'ev-row' + (isToday?' is-today':'') + (isNext?' is-next':'');
+    const timePart = e.time ? (' &middot; '+escapeHtml(e.time)) : '';
+    const notePart = e.note ? ('<div class="n">'+escapeHtml(e.note)+'</div>') : '';
+    return '<div class="'+rowClass+'" onclick="closeCatListModal(); openDayModal(&quot;'+e.date+'&quot;);">' +
+      '<span class="swatch" style="background:'+catColor(e.category)+'"></span>' +
+      '<div class="info"><div class="t"><span class="d">'+label+'</span>'+escapeHtml(e.title)+timePart+'</div>'+notePart+'</div>' +
+    '</div>';
+  }).join('');
 }
 
 /* ---------------- day / event modal ---------------- */
