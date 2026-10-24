@@ -288,6 +288,16 @@
   .cat-ev-list .ev-row .d{ font-size:11px; font-weight:700; color:var(--ink-soft); margin-right:8px; white-space:nowrap; }
   .cat-ev-list .ev-row.is-today{ border-color:var(--today-ring); box-shadow:0 0 0 1px var(--today-ring) inset; }
   .cat-ev-list .ev-row.is-next{ border-color:var(--ink-soft); }
+  @media print{
+    body.print-cat-list > *:not(#catListOverlay){ display:none !important; }
+    body.print-cat-list{ background:#fff !important; }
+    #catListOverlay{ position:static !important; background:none !important; display:block !important; padding:0 !important; }
+    #catListOverlay .modal{ box-shadow:none !important; border:none !important; max-width:100% !important; border-radius:0 !important; }
+    #catListOverlay .close-x, #catListOverlay .btn{ display:none !important; }
+    .cat-ev-list{ max-height:none !important; overflow:visible !important; }
+    .cat-ev-list .ev-row{ break-inside:avoid; border-color:#ccc !important; }
+    .cat-ev-list .ev-row.is-today, .cat-ev-list .ev-row.is-next{ box-shadow:none !important; }
+  }
 
   .field{ margin-bottom:12px; }
   .field > label{ display:block; font-size:11.5px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin-bottom:5px; }
@@ -472,7 +482,10 @@
   <div class="modal">
     <div class="modal-head">
       <h3 id="catListTitle">Events</h3>
-      <button class="close-x" onclick="closeCatListModal()" aria-label="Close">&times;</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button type="button" class="btn btn-sm btn-ghost" onclick="printCatList()">Print</button>
+        <button class="close-x" onclick="closeCatListModal()" aria-label="Close">&times;</button>
+      </div>
     </div>
     <div class="modal-body">
       <div class="ev-list cat-ev-list" id="catEvList"></div>
@@ -1224,6 +1237,13 @@ function openCatListModal(key){
 }
 function closeCatListModal(){
   document.getElementById('catListOverlay').classList.remove('show');
+}
+function printCatList(){
+  document.body.classList.add('print-cat-list');
+  const done = () => { document.body.classList.remove('print-cat-list'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  window.print();
+  setTimeout(done, 5000);
 }
 function renderCatList(key){
   const el = document.getElementById('catEvList');
