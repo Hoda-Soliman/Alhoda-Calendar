@@ -170,6 +170,16 @@
   .chip .dot{ width:9px; height:9px; border-radius:50%; flex:none; }
   .chip.off{ opacity:.4; }
   .chip.on{ color:var(--ink); border-color:var(--line); }
+  .chip.prep-chip{ border-style:dashed; border-color:var(--cat-prep); }
+  /* ---------- under preparation ---------- */
+  .ev-chip.prep{ background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.30) 0 4px, transparent 4px 8px); outline:1.5px dashed rgba(0,0,0,.45); outline-offset:-1.5px; }
+  .mini-dots span.prep{ opacity:.45; }
+  .up-card.prep{ border-style:dashed; border-color:var(--cat-prep); }
+  .prep-tag{ display:inline-block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--cat-prep); border:1px dashed var(--cat-prep); border-radius:999px; padding:1px 7px; margin-left:6px; white-space:nowrap; vertical-align:middle; }
+  .prep-toggle{ display:flex; align-items:flex-start; gap:9px; cursor:pointer; font-size:13px; font-weight:600; padding:10px 12px; border:1.5px dashed var(--line); border-radius:10px; }
+  .prep-toggle input{ width:17px; height:17px; margin-top:1px; accent-color:var(--cat-prep); flex:none; }
+  .prep-toggle small{ display:block; font-weight:500; color:var(--ink-soft); font-size:11.5px; margin-top:2px; }
+  .btn-announce{ border-color:var(--cat-prep) !important; color:var(--cat-prep) !important; }
 
   /* ---------- year view ---------- */
   #yearView.hidden, #monthView.hidden{ display:none; }
@@ -395,6 +405,7 @@
       <button class="btn" onclick="openExportModal()">Export events</button>
       <button class="btn" onclick="openDayModal(todayISOClamped())">+ Add event</button>
       <button class="btn btn-ghost" onclick="window.print()" title="Print current view">Print</button>
+      <button class="btn btn-ghost" id="editorBtn" onclick="editorLogin()" title="Editors: unlock to see events under preparation">&#128274; Editor</button>
     </div>
   </header>
 
@@ -440,7 +451,7 @@
     <div class="upcoming-row" id="upcomingRow"></div>
   </div>
 
-  <footer class="hint">Click any day to add, edit, or remove events &middot; Sunday&ndash;Thursday are school days, Friday&ndash;Saturday are shaded as the weekend &middot; everyone with this link sees the same calendar update live, and the notify list gets an email whenever it changes</footer>
+  <footer class="hint">Click any day to add, edit, or remove events &middot; Sunday&ndash;Thursday are school days, Friday&ndash;Saturday are shaded as the weekend &middot; everyone with this link sees the same calendar update live, and the notify list gets an email whenever it changes &middot; events ticked &ldquo;Under preparation&rdquo; are only shown to editors and send no email until they're announced</footer>
 </div>
 
 <!-- Day / Event modal -->
@@ -466,6 +477,14 @@
         <div class="field">
           <label>Category</label>
           <div class="cat-select" id="catSelect"></div>
+        </div>
+        <div class="field">
+          <label class="prep-toggle" for="evPrep">
+            <input type="checkbox" id="evPrep">
+            <span>Under preparation
+              <small>Only editors can see it, and no email is sent. Untick it (or press Announce) when it's ready &mdash; then everyone sees it and the notify list gets an email.</small>
+            </span>
+          </label>
         </div>
         <div class="row2">
           <div class="field">
@@ -608,9 +627,21 @@ const CATEGORIES = {
   visit:   { label:'Visit',    varc:'--cat-visit' },
 
   lesson:  { label:'Lesson Activity', varc:'--cat-lesson' },
-  prep:    { label:'Under Preparation', varc:'--cat-prep' },
   intl:    { label:'International Day', varc:'--cat-intl' },
 };
+/* "Under preparation" is a tick box on any event (field prep:true), not a category.
+   While ticked: only editors (unlocked with the password) see it, and no email goes out.
+   Unticking it ("Announce") shows it to everyone and emails the notify list. */
+const PREP_KEY = '__prep';
+function isPrep(e){ return !!(e && e.prep); }
+function normalizeLegacy(e){
+  // Events saved under the old "Under Preparation" category become Trip + under preparation.
+  if (e && e.category === 'prep') return { ...e, category:'trip', prep:true };
+  return e;
+}
+function visibleEvents(){
+  return isUnlocked() ? state.events : state.events.filter(e => !isPrep(e));
+}
 function catColor(key){
   const c = CATEGORIES[key] ? CATEGORIES[key].varc : '--cat-event';
   return getComputedStyle(document.documentElement).getPropertyValue(c).trim();
@@ -799,11 +830,16 @@ function submitUnlock(ev){
     try{ sessionStorage.setItem('cal-unlocked','1'); }catch(e){}
     state._unlockedMem = true;
     document.getElementById('unlockOverlay').classList.remove('show');
+    renderAll();
     const action = pendingUnlockAction; pendingUnlockAction = null;
     if (action) action();
   } else {
     document.getElementById('pinError').style.display = 'block';
   }
+}
+function editorLogin(){
+  if (isUnlocked()){ toast('Editing is unlocked — events under preparation are shown.'); return; }
+  requireUnlock(() => toast('Unlocked — events under preparation are now shown.'));
 }
 function closeUnlockModal(){
   document.getElementById('unlockOverlay').classList.remove('show');
@@ -924,7 +960,7 @@ async function syncLocalEventsToShared(){
 function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
 async function notifyChange(action, data){
   if (!NOTIFY_RECIPIENTS.length) return;
-  if (data.category === 'prep') return; // Under Preparation: no notification until it's a real event
+  if (data.prep || data.category === 'prep') return; // Under preparation: no email until it's announced
   if (data.category === 'intl') return; // International Day: informational only, no notification
   const catLabel = CATEGORIES[data.category] ? CATEGORIES[data.category].label : (data.category || '');
   // Sent via a small Google Apps Script web app running on Hoda's own Gmail,
@@ -962,11 +998,11 @@ async function storeAdd(data){
   renderAll();
   return true;
 }
-async function storeUpdate(id, data){
+async function storeUpdate(id, data, action){
   if (state.dbApi){
     try{
       await state.dbApi.doc('events/'+id).update(data);
-      notifyChange('updated', data);
+      notifyChange(action || 'updated', data);
       return true;
     }
     catch(e){ toast('Could not save that change.'); return false; }
@@ -1014,6 +1050,15 @@ function renderLegend(){
     btn.onclick = () => openCatListModal(key);
     el.appendChild(btn);
   });
+  const nPrep = state.events.filter(isPrep).length;
+  if (isUnlocked() && nPrep){
+    const btn = document.createElement('button');
+    btn.className = 'chip on prep-chip';
+    btn.title = 'View all events under preparation (only editors see these)';
+    btn.innerHTML = `<span class="dot" style="background:var(--cat-prep)"></span>Under preparation (${nPrep})`;
+    btn.onclick = () => openCatListModal(PREP_KEY);
+    el.appendChild(btn);
+  }
 }
 
 /* ---------------- view switching ---------------- */
@@ -1049,7 +1094,7 @@ function goToday(){
 
 /* ---------------- data helpers ---------------- */
 function filteredEvents(){
-  return state.events.filter(e => state.filter.has(e.category || 'event'));
+  return visibleEvents().filter(e => state.filter.has(e.category || 'event'));
 }
 function eventsByDate(){
   const map = {};
@@ -1092,7 +1137,7 @@ function renderYearView(){
       const evs = byDate[iso] || [];
       let dots = '';
       if (evs.length){
-        dots = '<div class="mini-dots">' + evs.slice(0,4).map(e=>`<span style="background:${catColor(e.category)}"></span>`).join('') + '</div>';
+        dots = '<div class="mini-dots">' + evs.slice(0,4).map(e=>`<span class="${isPrep(e)?'prep':''}" style="background:${catColor(e.category)}"></span>`).join('') + '</div>';
       }
       html += `<div class="mini-day ${isWeekend?'weekend':''} ${isToday?'today':''}" title="${evs.map(e=>e.title).join(', ')}"
                  onclick="event.stopPropagation(); jumpToDay('${iso}', ${idx})">${d}${dots}</div>`;
@@ -1157,7 +1202,7 @@ function renderMonthView(){
     cell.innerHTML = `
       <div class="day-num ${isToday?'today':''}">${d}</div>
       <div class="chips">
-        ${evs.map(e=>`<div class="ev-chip" style="background:${catColor(e.category)}">${escapeHtml(e.title)}</div>`).join('')}
+        ${evs.map(e=>`<div class="ev-chip${isPrep(e)?' prep':''}" ${isPrep(e)?'title="Under preparation — not announced yet"':''} style="background:${catColor(e.category)}">${escapeHtml(e.title)}</div>`).join('')}
       </div>`;
     grid.appendChild(cell);
   }
@@ -1209,7 +1254,7 @@ function renderWeekView(){
     cell.innerHTML = `
       <div class="day-num ${isToday?'today':''}">${d.getDate()}</div>
       <div class="chips">
-        ${evs.map(e=>`<div class="ev-chip" style="background:${catColor(e.category)}">${e.time?escapeHtml(e.time)+' &middot; ':''}${escapeHtml(e.title)}</div>`).join('')}
+        ${evs.map(e=>`<div class="ev-chip${isPrep(e)?' prep':''}" ${isPrep(e)?'title="Under preparation — not announced yet"':''} style="background:${catColor(e.category)}">${e.time?escapeHtml(e.time)+' &middot; ':''}${escapeHtml(e.title)}</div>`).join('')}
       </div>`;
     grid.appendChild(cell);
   }
@@ -1230,16 +1275,19 @@ function renderUpcoming(){
   row.innerHTML = list.map(e=>{
     const d = new Date(e.date+'T00:00:00');
     const label = d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
-    return `<div class="up-card">
+    return `<div class="up-card${isPrep(e)?' prep':''}">
       <div class="date">${label}</div>
       <div class="cat-bar" style="background:${catColor(e.category)}"></div>
-      <div class="ttl">${escapeHtml(e.title)}</div>
+      <div class="ttl">${escapeHtml(e.title)}${isPrep(e)?'<span class="prep-tag">Under prep</span>':''}</div>
     </div>`;
   }).join('');
 }
 
 /* ---------------- render all ---------------- */
 function renderAll(){
+  state.events = state.events.map(normalizeLegacy);
+  const eb = document.getElementById('editorBtn');
+  if (eb) eb.innerHTML = isUnlocked() ? '&#128275; Editor' : '&#128274; Editor';
   renderLegend();
   renderYearView();
   if (state.view==='month') renderMonthView();
@@ -1251,7 +1299,7 @@ function renderAll(){
 let currentCatKey = null;
 function openCatListModal(key){
   currentCatKey = key;
-  const cfg = CATEGORIES[key];
+  const cfg = key === PREP_KEY ? { label:'Under preparation' } : CATEGORIES[key];
   document.getElementById('catListTitle').textContent = cfg ? cfg.label : 'Events';
   document.getElementById('catFrom').value = '';
   document.getElementById('catTo').value = '';
@@ -1281,7 +1329,7 @@ function catListRangeText(){
   return 'Through ' + fmt(toVal);
 }
 function printCatList(){
-  const cfg = CATEGORIES[currentCatKey];
+  const cfg = currentCatKey === PREP_KEY ? { label:'Under preparation' } : CATEGORIES[currentCatKey];
   const label = cfg ? cfg.label : (document.getElementById('catListTitle').textContent || 'Events');
   const printedOn = new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric', year:'numeric'});
   document.getElementById('printOnlyHead').innerHTML =
@@ -1295,13 +1343,13 @@ function printCatList(){
 }
 function renderCatList(key){
   const el = document.getElementById('catEvList');
-  const cfg = CATEGORIES[key];
+  const cfg = key === PREP_KEY ? { label:'Under preparation' } : CATEGORIES[key];
   const today = todayISO();
   const fromVal = document.getElementById('catFrom').value;
   const toVal = document.getElementById('catTo').value;
   document.getElementById('catRangeLabel').textContent = catListRangeText();
-  let list = state.events
-    .filter(e => (e.category || 'event') === key)
+  let list = visibleEvents()
+    .filter(e => key === PREP_KEY ? isPrep(e) : (e.category || 'event') === key)
     .slice()
     .sort((a,b) => (a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
   if (fromVal) list = list.filter(e => e.date >= fromVal);
@@ -1360,7 +1408,7 @@ function closeDayModal(){
 }
 function renderDayList(){
   const iso = document.getElementById('evDate').value;
-  const list = state.events.filter(e=>e.date===iso).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  const list = visibleEvents().filter(e=>e.date===iso).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
   const el = document.getElementById('evList');
   if (!list.length){
     el.innerHTML = `<div class="empty-note">No events on this day yet.</div>`;
@@ -1370,10 +1418,11 @@ function renderDayList(){
     <div class="ev-row" data-id="${e.id}">
       <span class="swatch" style="background:${catColor(e.category)}"></span>
       <div class="info">
-        <div class="t">${escapeHtml(e.title)}${e.time ? ' &middot; '+escapeHtml(e.time) : ''}</div>
+        <div class="t">${escapeHtml(e.title)}${e.time ? ' &middot; '+escapeHtml(e.time) : ''}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>
         ${e.note ? `<div class="n">${escapeHtml(e.note)}</div>` : ''}
       </div>
       <div class="acts">
+        ${isPrep(e) ? `<button type="button" class="btn btn-sm btn-ghost btn-announce" onclick="announceEvent('${e.id}')" title="Show it to everyone and email the notify list">Announce</button>` : ''}
         <button type="button" class="btn btn-sm btn-ghost" onclick="editEvent('${e.id}')">Edit</button>
         <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete(this,'${e.id}')">Delete</button>
       </div>
@@ -1387,6 +1436,7 @@ function editEvent(id){
   document.getElementById('evTime').value = e.time || '';
   document.getElementById('evNote').value = e.note || '';
   renderCatSelect(e.category || 'event');
+  document.getElementById('evPrep').checked = isPrep(e);
   document.getElementById('formSubmitBtn').textContent = 'Save changes';
   document.getElementById('cancelEditBtn').style.display = 'inline-flex';
   document.getElementById('evTitle').focus();
@@ -1397,6 +1447,7 @@ function resetForm(){
   document.getElementById('evTime').value = '';
   document.getElementById('evNote').value = '';
   renderCatSelect('event');
+  document.getElementById('evPrep').checked = false;
   document.getElementById('formSubmitBtn').textContent = 'Add event';
   document.getElementById('cancelEditBtn').style.display = 'none';
 }
@@ -1411,6 +1462,16 @@ function confirmDelete(btn, id){
   btn.textContent = 'Confirm?';
   setTimeout(()=>{ if(btn){ btn.dataset.confirm=''; btn.textContent = original; } }, 2500);
 }
+function announceEvent(id){
+  requireUnlock(async () => {
+    const e = state.events.find(x => x.id === id);
+    if (!e) return;
+    if (!confirm('Announce "' + e.title + '"?\n\nEveryone will see it on the calendar and the notify list will get an email.')) return;
+    const data = { date:e.date, title:e.title, category:e.category || 'event', time:e.time || '', note:e.note || '', prep:false };
+    const ok = await storeUpdate(id, data, 'added');
+    if (ok){ toast('Announced — everyone can see it and the notify list was emailed.'); resetForm(); renderDayList(); }
+  });
+}
 async function submitEventForm(ev){
   ev.preventDefault();
   if (!isUnlocked()){ requireUnlock(() => submitEventForm(ev)); return; }
@@ -1423,11 +1484,16 @@ async function submitEventForm(ev){
   if (!date || !title) return;
   if (!inRange(date)){ toast('Date must be within Aug 2026 – Jul 2027.'); return; }
 
+  const prep = document.getElementById('evPrep').checked;
   const editingId = document.getElementById('editingId').value;
-  const data = { date, title, category, time: time || '', note: note || '' };
-  const ok = editingId ? await storeUpdate(editingId, data) : await storeAdd(data);
+  const data = { date, title, category, time: time || '', note: note || '', prep };
+  const before = editingId ? state.events.find(x => x.id === editingId) : null;
+  const announcing = !!(before && isPrep(before) && !prep);
+  const ok = editingId ? await storeUpdate(editingId, data, announcing ? 'added' : 'updated') : await storeAdd(data);
   if (ok){
-    toast(editingId ? 'Event updated.' : 'Event added.');
+    toast(prep ? (editingId ? 'Saved — still under preparation (no email sent).' : 'Added as under preparation — only editors see it, no email sent.')
+               : announcing ? 'Announced — everyone can see it and the notify list was emailed.'
+               : (editingId ? 'Event updated.' : 'Event added.'));
     resetForm();
     renderDayList();
   }
@@ -1467,7 +1533,9 @@ function parseImportPreview(){
     const parts = line.split(/\t|,/).map(p=>p.trim());
     const dateRaw = parts[0] || '';
     const title = parts[1] || '';
-    const catRaw = parts[2] || '';
+    let catRaw = parts[2] || '';
+    const prep = /prep/i.test(catRaw);
+    if (prep) catRaw = catRaw.replace(/\(?\s*under\s*prep\w*\s*\)?/i,'').replace(/\bprep\w*/i,'').trim();
     const note = parts.slice(3).join(', ');
     const iso = parseDateFlexible(dateRaw);
     let error = null;
@@ -1476,7 +1544,7 @@ function parseImportPreview(){
     else if (!inRange(iso)) error = 'Outside Aug 2026 – Jul 2027';
     else if (!title) error = 'Missing title';
     else duplicate = state.events.some(e => e.date === iso && e.title.trim().toLowerCase() === title.trim().toLowerCase());
-    rows.push({ raw: line, date: iso, title, category: normalizeCategory(catRaw), note, error, duplicate });
+    rows.push({ raw: line, date: iso, title, category: normalizeCategory(catRaw), prep, note, error, duplicate });
   });
   lastParsed = rows;
   const el = document.getElementById('previewList');
@@ -1490,7 +1558,7 @@ function parseImportPreview(){
   el.innerHTML = rows.map(r=>{
     if (r.error) return `<div class="preview-row bad"><span class="pdate">${escapeHtml(r.raw.slice(0,10))}</span><span>${r.error}: "${escapeHtml(r.raw)}"</span></div>`;
     if (r.duplicate) return `<div class="preview-row" style="color:var(--ink-soft)"><span class="pdate">${r.date}</span><span>${escapeHtml(r.title)} <span>&middot; already on this calendar, will skip</span></span></div>`;
-    return `<div class="preview-row"><span class="pdate">${r.date}</span><span>${escapeHtml(r.title)} <span style="color:var(--ink-soft)">&middot; ${CATEGORIES[r.category].label}</span></span></div>`;
+    return `<div class="preview-row"><span class="pdate">${r.date}</span><span>${escapeHtml(r.title)} <span style="color:var(--ink-soft)">&middot; ${CATEGORIES[r.category].label}${r.prep?' (under preparation)':''}</span></span></div>`;
   }).join('');
   document.getElementById('confirmImportBtn').style.display = ok ? 'inline-flex' : 'none';
 }
@@ -1504,7 +1572,7 @@ async function confirmImport(){
   document.getElementById('confirmImportBtn').disabled = true;
   let done = 0;
   for (const r of rows){
-    await storeAdd({ date:r.date, title:r.title, category:r.category, time:'', note:r.note||'' });
+    await storeAdd({ date:r.date, title:r.title, category:r.category, time:'', note:r.note||'', prep:!!r.prep });
     done++;
     fill.style.width = Math.round(done/rows.length*100) + '%';
   }
@@ -1528,7 +1596,7 @@ function closeImportModal(){
 
 /* ---------------- export (manual backup helper) ---------------- */
 function buildExportText(){
-  const rows = [...state.events]
+  const rows = [...visibleEvents()]
     .slice()
     .sort((a,b)=> a.date.localeCompare(b.date));
   // Tab-separated so commas inside a title or note never get mistaken for
@@ -1536,7 +1604,7 @@ function buildExportText(){
   return rows.map(e => [
     e.date,
     (e.title||'').replace(/\t/g,' '),
-    (CATEGORIES[e.category] ? CATEGORIES[e.category].label : 'Event'),
+    (CATEGORIES[e.category] ? CATEGORIES[e.category].label : 'Event') + (isPrep(e) ? ' (Under preparation)' : ''),
     (e.note||'').replace(/\t/g,' ')
   ].join('\t')).join('\n');
 }
