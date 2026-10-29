@@ -171,6 +171,12 @@
   .chip.off{ opacity:.4; }
   .chip.on{ color:var(--ink); border-color:var(--line); }
   .chip.prep-chip{ border-style:dashed; border-color:var(--cat-prep); }
+  .chip.intl-toggle{ margin-left:auto; gap:9px; }
+  .chip.intl-toggle .sw{ position:relative; width:30px; height:17px; border-radius:999px; background:var(--line); transition:background .15s ease; flex:none; }
+  .chip.intl-toggle .sw::after{ content:''; position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.25); transition:transform .15s ease; }
+  .chip.intl-toggle[aria-checked="true"] .sw{ background:var(--cat-intl); }
+  .chip.intl-toggle[aria-checked="true"] .sw::after{ transform:translateX(13px); }
+  @media print{ .chip.intl-toggle{ display:none; } }
   /* ---------- under preparation ---------- */
   .ev-chip.prep{ background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.30) 0 4px, transparent 4px 8px); outline:1.5px dashed rgba(0,0,0,.45); outline-offset:-1.5px; }
   .mini-dots span.prep{ opacity:.45; }
@@ -772,6 +778,16 @@ const state = {
   dbApi: null,
   localMode: false,
 };
+// Show / hide International Days: each person's choice is remembered on their own device.
+const INTL_PREF_KEY = 'cal-hide-intl';
+try{ if (localStorage.getItem(INTL_PREF_KEY) === '1') state.filter.delete('intl'); }catch(e){}
+function toggleIntlDays(){
+  const show = !state.filter.has('intl');
+  if (show) state.filter.add('intl'); else state.filter.delete('intl');
+  try{ localStorage.setItem(INTL_PREF_KEY, show ? '0' : '1'); }catch(e){}
+  renderAll();
+  toast(show ? 'International Days are shown.' : 'International Days are hidden.');
+}
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function ymd(y,m,d){ return `${y}-${pad2(m+1)}-${pad2(d)}`; }
@@ -1050,6 +1066,15 @@ function renderLegend(){
     btn.onclick = () => openCatListModal(key);
     el.appendChild(btn);
   });
+  const intlOn = state.filter.has('intl');
+  const tg = document.createElement('button');
+  tg.className = 'chip on intl-toggle';
+  tg.setAttribute('role','switch');
+  tg.setAttribute('aria-checked', intlOn ? 'true' : 'false');
+  tg.title = intlOn ? 'Hide International Days from the calendar' : 'Show International Days on the calendar';
+  tg.innerHTML = `<span class="sw"></span>International Days: ${intlOn ? 'shown' : 'hidden'}`;
+  tg.onclick = toggleIntlDays;
+  el.appendChild(tg);
   const nPrep = state.events.filter(isPrep).length;
   if (isUnlocked() && nPrep){
     const btn = document.createElement('button');
