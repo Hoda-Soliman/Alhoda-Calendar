@@ -186,6 +186,35 @@
   .prep-toggle input{ width:17px; height:17px; margin-top:1px; accent-color:var(--cat-prep); flex:none; }
   .prep-toggle small{ display:block; font-weight:500; color:var(--ink-soft); font-size:11.5px; margin-top:2px; }
   .btn-announce{ border-color:var(--cat-prep) !important; color:var(--cat-prep) !important; }
+  /* ---------- trip / visitor contact details (editors only) ---------- */
+  .contact-box{ display:none; border:1.5px solid var(--line); border-radius:10px; padding:12px 12px 2px; margin-bottom:12px; background:var(--paper); }
+  .contact-box.show{ display:block; }
+  .contact-box .cb-head{ font-size:12px; font-weight:700; margin-bottom:10px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  .contact-box .cb-head small{ font-weight:500; color:var(--ink-soft); }
+  .field input[type="tel"], .field input[type="url"]{ width:100%; border:1px solid var(--line); background:var(--paper-raised); color:var(--ink); padding:9px 10px; border-radius:8px; font-size:13.5px; font-family:inherit; }
+  .contact-card{ margin-top:6px; padding:7px 9px; border-radius:8px; background:var(--paper); border:1px dashed var(--line); font-size:12px; display:flex; flex-direction:column; gap:3px; }
+  .contact-card a{ color:inherit; font-weight:600; text-decoration:underline; text-underline-offset:2px; }
+  .contact-card .cc-note{ color:var(--ink-soft); white-space:pre-wrap; }
+  @media (max-width:520px){ .contact-box .row2{ grid-template-columns:1fr; } }
+  /* ---------- trips & visitors guide ---------- */
+  #guideOverlay .modal{ max-width:640px; }
+  .guide-bar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+  .guide-bar input[type="search"]{ flex:1; min-width:150px; border:1px solid var(--line); background:var(--paper); color:var(--ink); padding:8px 10px; border-radius:8px; font-size:13.5px; font-family:inherit; }
+  .guide-list{ display:flex; flex-direction:column; gap:8px; max-height:58vh; overflow-y:auto; }
+  .guide-card{ border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:var(--paper); }
+  .guide-card .g-top{ display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
+  .guide-card .g-name{ font-size:14px; font-weight:700; }
+  .guide-card .g-acts{ display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; flex:none; }
+  .guide-card .g-lines{ font-size:12.5px; display:flex; flex-direction:column; gap:2px; margin-top:4px; }
+  .guide-card .g-lines a{ color:inherit; font-weight:600; text-decoration:underline; text-underline-offset:2px; }
+  .guide-card .g-used{ font-size:11.5px; color:var(--ink-soft); margin-top:6px; border-top:1px dashed var(--line); padding-top:5px; }
+  .guide-card .g-note{ color:var(--ink-soft); white-space:pre-wrap; }
+  #guideForm{ display:none; border:1.5px solid var(--line); border-radius:10px; padding:12px 12px 4px; margin-bottom:12px; }
+  #guideForm.show{ display:block; }
+  .guide-pick{ display:flex; gap:8px; align-items:flex-end; margin-bottom:10px; flex-wrap:wrap; }
+  .guide-pick .field{ flex:1; min-width:170px; margin-bottom:0; }
+  .linked-tag{ font-size:11px; font-weight:700; color:var(--ink-soft); }
+  @media (max-width:520px){ .guide-card .g-top{ flex-direction:column; } .guide-card .g-acts{ justify-content:flex-start; } #guideForm .row2{ grid-template-columns:1fr; } }
 
   /* ---------- year view ---------- */
   #yearView.hidden, #monthView.hidden{ display:none; }
@@ -410,6 +439,7 @@
       <button class="btn btn-primary" onclick="openImportModal()">Import events</button>
       <button class="btn" onclick="openExportModal()">Export events</button>
       <button class="btn" onclick="openDayModal(todayISOClamped())">+ Add event</button>
+      <button class="btn" onclick="openGuide()" title="Places for trips and visitors' contacts (editors only)">&#128210; Guide</button>
       <button class="btn btn-ghost" onclick="window.print()" title="Print current view">Print</button>
       <button class="btn btn-ghost" id="editorBtn" onclick="editorLogin()" title="Editors: unlock to see events under preparation">&#128274; Editor</button>
     </div>
@@ -484,6 +514,39 @@
           <label>Category</label>
           <div class="cat-select" id="catSelect"></div>
         </div>
+        <div class="contact-box" id="contactBox">
+          <div class="cb-head"><span id="cbTitle">Trip contact</span><small>&#128274; Only editors can see this</small></div>
+          <input type="hidden" id="evGuideId" value="">
+          <div class="guide-pick">
+            <div class="field">
+              <label for="evGuideSel">Pick from the guide</label>
+              <select id="evGuideSel" onchange="pickFromGuide(this.value)"></select>
+            </div>
+            <button type="button" class="btn btn-sm" id="saveToGuideBtn" onclick="saveContactToGuide()" title="Keep these details in the guide for next time">+ Save to guide</button>
+          </div>
+          <div class="field" id="cbLinkField">
+            <label for="evPlaceLink">Place link <span style="text-transform:none;font-weight:500;">(Google Maps link or address)</span></label>
+            <input type="text" id="evPlaceLink" maxlength="500" placeholder="https://maps.app.goo.gl/... or the address">
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label for="evContactName" id="cbNameLabel">Contact person</label>
+              <input type="text" id="evContactName" maxlength="120" placeholder="Name">
+            </div>
+            <div class="field">
+              <label for="evContactPhone">Phone number</label>
+              <input type="tel" id="evContactPhone" maxlength="40" placeholder="01x xxxx xxxx">
+            </div>
+          </div>
+          <div class="field" id="cbJobField">
+            <label for="evContactJob">Their work / job</label>
+            <input type="text" id="evContactJob" maxlength="160" placeholder="e.g. Psychologist, Children's author">
+          </div>
+          <div class="field">
+            <label for="evContactNote">Contact note <span style="text-transform:none;font-weight:500;">(optional)</span></label>
+            <textarea id="evContactNote" maxlength="1000" rows="2" placeholder="Anything else: best time to call, payment, what to bring..."></textarea>
+          </div>
+        </div>
         <div class="field">
           <label class="prep-toggle" for="evPrep">
             <input type="checkbox" id="evPrep">
@@ -538,6 +601,65 @@
       </div>
       <div class="cat-range-label" id="catRangeLabel"></div>
       <div class="ev-list cat-ev-list" id="catEvList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Trips & visitors guide modal -->
+<div class="overlay" id="guideOverlay" onclick="if(event.target===this) closeGuide()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>&#128210; Trips &amp; Visitors Guide</h3>
+      <button class="close-x" onclick="closeGuide()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;">Keep good places and visitors here any time. Then use <b>Add to calendar</b>, or pick them when you add a Trip or Visit. &#128274; Only editors can see this guide.</p>
+      <div class="guide-bar">
+        <div class="seg" role="tablist" aria-label="Guide section">
+          <button id="gTabTrip" class="active" onclick="setGuideTab('trip')">Trip places</button>
+          <button id="gTabVisit" onclick="setGuideTab('visit')">Visitors</button>
+        </div>
+        <input type="search" id="guideSearch" placeholder="Search..." oninput="renderGuideList()">
+        <button class="btn btn-sm btn-primary" id="guideAddBtn" onclick="openGuideForm()">+ Add place</button>
+      </div>
+      <form id="guideForm" onsubmit="submitGuideForm(event)">
+        <input type="hidden" id="gEditId" value="">
+        <div class="field">
+          <label for="gName" id="gNameLabel">Place name</label>
+          <input type="text" id="gName" maxlength="120" required placeholder="e.g. Kidzania Cairo">
+        </div>
+        <div class="field" id="gLinkField">
+          <label for="gLink">Place link <span style="text-transform:none;font-weight:500;">(Google Maps link or address)</span></label>
+          <input type="text" id="gLink" maxlength="500" placeholder="https://maps.app.goo.gl/... or the address">
+        </div>
+        <div class="row2">
+          <div class="field" id="gContactField">
+            <label for="gContact">Contact person</label>
+            <input type="text" id="gContact" maxlength="120" placeholder="Name">
+          </div>
+          <div class="field">
+            <label for="gPhone">Phone number</label>
+            <input type="tel" id="gPhone" maxlength="40" placeholder="01x xxxx xxxx">
+          </div>
+        </div>
+        <div class="field" id="gJobField">
+          <label for="gJob">Their work / job</label>
+          <input type="text" id="gJob" maxlength="160" placeholder="e.g. Psychologist, Children's author">
+        </div>
+        <div class="field">
+          <label for="gFor">Good for <span style="text-transform:none;font-weight:500;">(optional: year groups, subject, unit)</span></label>
+          <input type="text" id="gFor" maxlength="200" placeholder="e.g. Y2–Y4, Science, How the world works">
+        </div>
+        <div class="field">
+          <label for="gNote">Note <span style="text-transform:none;font-weight:500;">(optional)</span></label>
+          <textarea id="gNote" maxlength="1500" rows="2" placeholder="Price, opening hours, best time to call..."></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeGuideForm()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="gSaveBtn">Save</button>
+        </div>
+      </form>
+      <div class="guide-list" id="guideList"></div>
     </div>
   </div>
 </div>
@@ -777,6 +899,7 @@ const state = {
   events: [],      // {id, date, title, category, time, note}
   dbApi: null,
   localMode: false,
+  guide: [],       // trips & visitors guide entries
 };
 // Show / hide International Days: each person's choice is remembered on their own device.
 const INTL_PREF_KEY = 'cal-hide-intl';
@@ -873,6 +996,7 @@ async function initStore(){
     state.dbApi = firebase.firestore();
     await seedIfEmpty();
     subscribeEvents();
+    subscribeGuide();
   }catch(e){
     console.error('Could not reach the shared calendar, showing a local copy instead:', e);
     enableLocalMode();
@@ -1402,7 +1526,7 @@ function renderCatList(key){
     const notePart = e.note ? ('<div class="n">'+escapeHtml(e.note)+'</div>') : '';
     html += '<div class="'+rowClass+'" onclick="closeCatListModal(); openDayModal(&quot;'+e.date+'&quot;);">' +
       '<span class="swatch" style="background:'+catColor(e.category)+'"></span>' +
-      '<div class="info"><div class="t"><span class="d">'+label+'</span>'+escapeHtml(e.title)+timePart+'</div>'+notePart+'</div>' +
+      '<div class="info"><div class="t"><span class="d">'+label+'</span>'+escapeHtml(e.title)+timePart+'</div>'+notePart+contactCardHtml(e)+'</div>' +
     '</div>';
   });
   el.innerHTML = html;
@@ -1421,6 +1545,53 @@ function highlightCat(key){
   document.querySelectorAll('#catSelect .cat-opt').forEach(o=>{
     o.classList.toggle('sel', o.dataset.key===key);
   });
+  updateContactBox(key);
+}
+/* Trip / visitor contact details. Saved on the event, shown only to editors, never put in emails. */
+const CONTACT_FIELDS = ['placeLink','contactName','contactPhone','contactJob','contactNote'];
+const CONTACT_INPUTS = { placeLink:'evPlaceLink', contactName:'evContactName', contactPhone:'evContactPhone', contactJob:'evContactJob', contactNote:'evContactNote' };
+function hasContactBox(cat){ return cat === 'trip' || cat === 'visit'; }
+function updateContactBox(cat){
+  const box = document.getElementById('contactBox');
+  if (!box) return;
+  box.classList.toggle('show', hasContactBox(cat));
+  const isTrip = cat === 'trip';
+  document.getElementById('cbTitle').textContent = isTrip ? 'Trip contact' : 'Visitor details';
+  document.getElementById('cbNameLabel').textContent = isTrip ? 'Contact person' : 'Visitor name';
+  document.getElementById('cbLinkField').style.display = isTrip ? '' : 'none';
+  document.getElementById('cbJobField').style.display = isTrip ? 'none' : '';
+  renderGuidePick(cat);
+}
+function fillContactInputs(e){
+  CONTACT_FIELDS.forEach(k => { document.getElementById(CONTACT_INPUTS[k]).value = (e && e[k]) || ''; });
+  document.getElementById('evGuideId').value = (e && e.guideId) || '';
+}
+function readContactInputs(cat){
+  const out = {};
+  CONTACT_FIELDS.forEach(k => { out[k] = hasContactBox(cat) ? document.getElementById(CONTACT_INPUTS[k]).value.trim() : ''; });
+  if (cat !== 'trip') out.placeLink = '';
+  if (cat !== 'visit') out.contactJob = '';
+  out.guideId = hasContactBox(cat) ? document.getElementById('evGuideId').value : '';
+  return out;
+}
+function placeHref(v){
+  if (!v) return '';
+  if (/^https?:\/\//i.test(v)) return v;
+  if (/^(www\.|maps\.|goo\.gl)/i.test(v)) return 'https://' + v;
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(v);
+}
+function contactCardHtml(e){
+  if (!isUnlocked() || !hasContactBox(e.category)) return '';
+  const parts = [];
+  const g = e.guideId ? state.guide.find(x => x.id === e.guideId) : null;
+  if (g) parts.push(`<div class="linked-tag">&#128210; In the guide: ${escapeHtml(g.name)}</div>`);
+  if (e.category === 'trip' && e.placeLink) parts.push(`<div>&#128205; <a href="${escapeHtml(placeHref(e.placeLink))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open place on map</a></div>`);
+  const who = e.category === 'trip' ? 'Contact' : 'Visitor';
+  if (e.contactName) parts.push(`<div>&#128100; ${who}: ${escapeHtml(e.contactName)}</div>`);
+  if (e.contactPhone) parts.push(`<div>&#128222; <a href="tel:${escapeHtml(e.contactPhone.replace(/[^\d+]/g,''))}" onclick="event.stopPropagation()">${escapeHtml(e.contactPhone)}</a></div>`);
+  if (e.category === 'visit' && e.contactJob) parts.push(`<div>&#128188; ${escapeHtml(e.contactJob)}</div>`);
+  if (e.contactNote) parts.push(`<div class="cc-note">&#128221; ${escapeHtml(e.contactNote)}</div>`);
+  return parts.length ? `<div class="contact-card">${parts.join('')}</div>` : '';
 }
 function openDayModal(iso){
   document.getElementById('evDate').value = iso;
@@ -1445,6 +1616,7 @@ function renderDayList(){
       <div class="info">
         <div class="t">${escapeHtml(e.title)}${e.time ? ' &middot; '+escapeHtml(e.time) : ''}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>
         ${e.note ? `<div class="n">${escapeHtml(e.note)}</div>` : ''}
+        ${contactCardHtml(e)}
       </div>
       <div class="acts">
         ${isPrep(e) ? `<button type="button" class="btn btn-sm btn-ghost btn-announce" onclick="announceEvent('${e.id}')" title="Show it to everyone and email the notify list">Announce</button>` : ''}
@@ -1461,6 +1633,8 @@ function editEvent(id){
   document.getElementById('evTime').value = e.time || '';
   document.getElementById('evNote').value = e.note || '';
   renderCatSelect(e.category || 'event');
+  fillContactInputs(e);
+  updateContactBox(e.category || 'event');
   document.getElementById('evPrep').checked = isPrep(e);
   document.getElementById('formSubmitBtn').textContent = 'Save changes';
   document.getElementById('cancelEditBtn').style.display = 'inline-flex';
@@ -1472,6 +1646,8 @@ function resetForm(){
   document.getElementById('evTime').value = '';
   document.getElementById('evNote').value = '';
   renderCatSelect('event');
+  fillContactInputs(null);
+  updateContactBox('event');
   document.getElementById('evPrep').checked = false;
   document.getElementById('formSubmitBtn').textContent = 'Add event';
   document.getElementById('cancelEditBtn').style.display = 'none';
@@ -1486,6 +1662,204 @@ function confirmDelete(btn, id){
   const original = btn.textContent;
   btn.textContent = 'Confirm?';
   setTimeout(()=>{ if(btn){ btn.dataset.confirm=''; btn.textContent = original; } }, 2500);
+}
+/* ---------------- trips & visitors guide ---------------- */
+/* Stored in the 'guide' collection. Editors only. Changes here never send emails. */
+let guideTab = 'trip';
+function subscribeGuide(){
+  try{
+    state.dbApi.collection('guide').onSnapshot(
+      snap => {
+        state.guide = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+        renderGuideList();
+        const c = document.querySelector('#catSelect input[name="evCat"]:checked');
+        if (c) renderGuidePick(c.value);
+        if (document.getElementById('dayOverlay').classList.contains('show')) renderDayList();
+      },
+      err => console.error('Could not load the guide:', err)
+    );
+  }catch(e){ console.error('Could not load the guide:', e); }
+}
+function openGuide(){
+  requireUnlock(() => {
+    renderAll();
+    closeGuideForm();
+    setGuideTab(guideTab);
+    document.getElementById('guideOverlay').classList.add('show');
+  });
+}
+function closeGuide(){ document.getElementById('guideOverlay').classList.remove('show'); }
+function setGuideTab(t){
+  guideTab = t;
+  document.getElementById('gTabTrip').classList.toggle('active', t==='trip');
+  document.getElementById('gTabVisit').classList.toggle('active', t==='visit');
+  document.getElementById('guideAddBtn').textContent = t==='trip' ? '+ Add place' : '+ Add visitor';
+  closeGuideForm();
+  renderGuideList();
+}
+function guideFormLayout(type){
+  const isTrip = type === 'trip';
+  document.getElementById('gNameLabel').textContent = isTrip ? 'Place name' : 'Visitor name';
+  document.getElementById('gName').placeholder = isTrip ? 'e.g. Kidzania Cairo' : 'e.g. Dr Heba Ayad';
+  document.getElementById('gLinkField').style.display = isTrip ? '' : 'none';
+  document.getElementById('gContactField').style.display = isTrip ? '' : 'none';
+  document.getElementById('gJobField').style.display = isTrip ? 'none' : '';
+}
+function openGuideForm(id){
+  const g = id ? state.guide.find(x => x.id === id) : null;
+  guideFormLayout(g ? g.type : guideTab);
+  document.getElementById('gEditId').value = g ? g.id : '';
+  document.getElementById('gName').value = g ? (g.name||'') : '';
+  document.getElementById('gLink').value = g ? (g.placeLink||'') : '';
+  document.getElementById('gContact').value = g ? (g.contactName||'') : '';
+  document.getElementById('gPhone').value = g ? (g.contactPhone||'') : '';
+  document.getElementById('gJob').value = g ? (g.contactJob||'') : '';
+  document.getElementById('gFor').value = g ? (g.goodFor||'') : '';
+  document.getElementById('gNote').value = g ? (g.note||'') : '';
+  document.getElementById('gSaveBtn').textContent = g ? 'Save changes' : 'Save';
+  document.getElementById('guideForm').classList.add('show');
+  document.getElementById('gName').focus();
+}
+function closeGuideForm(){ document.getElementById('guideForm').classList.remove('show'); }
+async function guideSave(id, data){
+  if (!state.dbApi){ toast('The guide needs the shared calendar connection.'); return null; }
+  try{
+    if (id){ await state.dbApi.doc('guide/'+id).update(data); return id; }
+    const ref = await state.dbApi.collection('guide').add(data);
+    return ref.id;
+  }catch(e){ console.error(e); toast('Could not save to the guide.'); return null; }
+}
+async function submitGuideForm(ev){
+  ev.preventDefault();
+  if (!isUnlocked()){ requireUnlock(() => submitGuideForm(ev)); return; }
+  const id = document.getElementById('gEditId').value;
+  const old = id ? state.guide.find(x => x.id === id) : null;
+  const type = old ? old.type : guideTab;
+  const name = document.getElementById('gName').value.trim();
+  if (!name) return;
+  const data = {
+    type, name,
+    placeLink: type==='trip' ? document.getElementById('gLink').value.trim() : '',
+    contactName: type==='trip' ? document.getElementById('gContact').value.trim() : name,
+    contactPhone: document.getElementById('gPhone').value.trim(),
+    contactJob: type==='visit' ? document.getElementById('gJob').value.trim() : '',
+    goodFor: document.getElementById('gFor').value.trim(),
+    note: document.getElementById('gNote').value.trim(),
+  };
+  const ok = await guideSave(id, data);
+  if (ok){ toast(id ? 'Guide updated.' : 'Added to the guide.'); closeGuideForm(); }
+}
+function deleteGuide(btn, id){
+  if (btn.dataset.confirm !== '1'){
+    btn.dataset.confirm = '1'; const t = btn.textContent; btn.textContent = 'Confirm?';
+    setTimeout(()=>{ btn.dataset.confirm=''; btn.textContent = t; }, 2500);
+    return;
+  }
+  requireUnlock(async () => {
+    try{ await state.dbApi.doc('guide/'+id).delete(); toast('Removed from the guide. Calendar events keep their details.'); }
+    catch(e){ toast('Could not remove it.'); }
+  });
+}
+function guideUsedIn(id){
+  return state.events.filter(e => e.guideId === id).sort((a,b) => a.date.localeCompare(b.date));
+}
+function renderGuideList(){
+  const el = document.getElementById('guideList');
+  if (!el) return;
+  const q = (document.getElementById('guideSearch').value || '').trim().toLowerCase();
+  let list = (state.guide || []).filter(g => (g.type || 'trip') === guideTab);
+  if (q) list = list.filter(g => [g.name,g.contactName,g.contactPhone,g.contactJob,g.goodFor,g.note,g.placeLink].join(' ').toLowerCase().includes(q));
+  list.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  if (!list.length){
+    el.innerHTML = `<div class="empty-note">${q ? 'Nothing matches your search.' : (guideTab==='trip' ? 'No places yet. Press “+ Add place” to keep a good trip place here.' : 'No visitors yet. Press “+ Add visitor” to keep a visitor’s details here.')}</div>`;
+    return;
+  }
+  el.innerHTML = list.map(g => {
+    const lines = [];
+    if (g.type==='trip' && g.placeLink) lines.push(`<div>&#128205; <a href="${escapeHtml(placeHref(g.placeLink))}" target="_blank" rel="noopener">Open place on map</a></div>`);
+    if (g.type==='trip' && g.contactName) lines.push(`<div>&#128100; Contact: ${escapeHtml(g.contactName)}</div>`);
+    if (g.contactPhone) lines.push(`<div>&#128222; <a href="tel:${escapeHtml(g.contactPhone.replace(/[^\d+]/g,''))}">${escapeHtml(g.contactPhone)}</a></div>`);
+    if (g.type==='visit' && g.contactJob) lines.push(`<div>&#128188; ${escapeHtml(g.contactJob)}</div>`);
+    if (g.goodFor) lines.push(`<div>&#127919; Good for: ${escapeHtml(g.goodFor)}</div>`);
+    if (g.note) lines.push(`<div class="g-note">&#128221; ${escapeHtml(g.note)}</div>`);
+    const used = guideUsedIn(g.id);
+    const usedTxt = used.length
+      ? '&#128197; On the calendar: ' + used.map(e => escapeHtml(new Date(e.date+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}) + ' · ' + e.title) + (isPrep(e)?' (under prep)':'')).join(' &middot; ')
+      : 'Not on the calendar yet';
+    return `<div class="guide-card">
+      <div class="g-top">
+        <div class="g-name">${escapeHtml(g.name)}</div>
+        <div class="g-acts">
+          <button type="button" class="btn btn-sm btn-primary" onclick="addGuideToCalendar('${g.id}')">Add to calendar</button>
+          <button type="button" class="btn btn-sm btn-ghost" onclick="openGuideForm('${g.id}')">Edit</button>
+          <button type="button" class="btn btn-sm btn-danger" onclick="deleteGuide(this,'${g.id}')">Delete</button>
+        </div>
+      </div>
+      <div class="g-lines">${lines.join('')}</div>
+      <div class="g-used">${usedTxt}</div>
+    </div>`;
+  }).join('');
+}
+function renderGuidePick(cat){
+  const sel = document.getElementById('evGuideSel');
+  if (!sel) return;
+  const cur = document.getElementById('evGuideId').value;
+  const list = (state.guide || []).filter(g => g.type === cat).sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  const none = cat === 'trip' ? '— choose a place —' : '— choose a visitor —';
+  sel.innerHTML = `<option value="">${list.length ? none : (cat==='trip' ? 'No places in the guide yet' : 'No visitors in the guide yet')}</option>` +
+    list.map(g => `<option value="${g.id}" ${g.id===cur?'selected':''}>${escapeHtml(g.name)}${g.goodFor ? ' — '+escapeHtml(g.goodFor) : ''}</option>`).join('');
+  document.getElementById('saveToGuideBtn').style.display = cur && list.some(g => g.id === cur) ? 'none' : '';
+}
+function pickFromGuide(id){
+  const g = state.guide.find(x => x.id === id);
+  document.getElementById('evGuideId').value = g ? g.id : '';
+  if (g){
+    document.getElementById('evPlaceLink').value = g.placeLink || '';
+    document.getElementById('evContactName').value = g.contactName || '';
+    document.getElementById('evContactPhone').value = g.contactPhone || '';
+    document.getElementById('evContactJob').value = g.contactJob || '';
+    if (!document.getElementById('evContactNote').value) document.getElementById('evContactNote').value = g.note || '';
+    const t = document.getElementById('evTitle');
+    if (!t.value.trim()) t.value = g.name;
+  }
+  document.getElementById('saveToGuideBtn').style.display = g ? 'none' : '';
+}
+function saveContactToGuide(){
+  requireUnlock(async () => {
+    const c = document.querySelector('#catSelect input[name="evCat"]:checked');
+    const type = c ? c.value : '';
+    if (!hasContactBox(type)) return;
+    const name = type === 'trip'
+      ? (document.getElementById('evTitle').value.trim())
+      : (document.getElementById('evContactName').value.trim());
+    if (!name){ toast(type === 'trip' ? 'Write the trip title first — it becomes the place name.' : 'Write the visitor name first.'); return; }
+    const data = {
+      type, name,
+      placeLink: type==='trip' ? document.getElementById('evPlaceLink').value.trim() : '',
+      contactName: document.getElementById('evContactName').value.trim(),
+      contactPhone: document.getElementById('evContactPhone').value.trim(),
+      contactJob: type==='visit' ? document.getElementById('evContactJob').value.trim() : '',
+      goodFor: '',
+      note: document.getElementById('evContactNote').value.trim(),
+    };
+    const id = await guideSave('', data);
+    if (id){
+      document.getElementById('evGuideId').value = id;
+      toast('Saved to the guide. You can edit it any time from 📒 Guide.');
+    }
+  });
+}
+function addGuideToCalendar(id){
+  const g = state.guide.find(x => x.id === id);
+  if (!g) return;
+  closeGuide();
+  openDayModal(todayISOClamped());
+  renderCatSelect(g.type);
+  updateContactBox(g.type);
+  pickFromGuide(g.id);
+  renderGuidePick(g.type);
+  document.getElementById('evDate').focus();
+  toast('Choose the date, check the title, then press “Add event”.');
 }
 function announceEvent(id){
   requireUnlock(async () => {
@@ -1511,7 +1885,7 @@ async function submitEventForm(ev){
 
   const prep = document.getElementById('evPrep').checked;
   const editingId = document.getElementById('editingId').value;
-  const data = { date, title, category, time: time || '', note: note || '', prep };
+  const data = { date, title, category, time: time || '', note: note || '', prep, ...readContactInputs(category) };
   const before = editingId ? state.events.find(x => x.id === editingId) : null;
   const announcing = !!(before && isPrep(before) && !prep);
   const ok = editingId ? await storeUpdate(editingId, data, announcing ? 'added' : 'updated') : await storeAdd(data);
@@ -1662,7 +2036,7 @@ function escapeHtml(s){
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 document.addEventListener('keydown', (e)=>{
-  if (e.key === 'Escape'){ closeDayModal(); closeImportModal(); closeUnlockModal(); }
+  if (e.key === 'Escape'){ closeDayModal(); closeImportModal(); closeUnlockModal(); closeGuide(); }
 });
 
 /* ---------------- init ---------------- */
