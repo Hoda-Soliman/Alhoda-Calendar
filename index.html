@@ -196,6 +196,24 @@
   .contact-card a{ color:inherit; font-weight:600; text-decoration:underline; text-underline-offset:2px; }
   .contact-card .cc-note{ color:var(--ink-soft); white-space:pre-wrap; }
   @media (max-width:520px){ .contact-box .row2{ grid-template-columns:1fr; } }
+  /* ---------- trip supervisors ---------- */
+  .sup-box{ display:none; border:1.5px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px; }
+  .sup-box.show{ display:block; }
+  .sup-box .cb-head{ font-size:12px; font-weight:700; margin-bottom:10px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  .sup-box .cb-head small{ font-weight:500; color:var(--ink-soft); }
+  .sup-row{ display:grid; grid-template-columns:120px 1fr 32px; gap:8px; margin-bottom:8px; align-items:center; }
+  .sup-row input{ width:100%; border:1px solid var(--line); background:var(--paper); color:var(--ink); padding:8px 9px; border-radius:8px; font-size:13px; font-family:inherit; }
+  .sup-row .sup-del{ border:1px solid var(--line); background:transparent; color:var(--ink-soft); border-radius:8px; height:34px; cursor:pointer; font-size:16px; }
+  .sup-row .sup-del:hover{ color:var(--cat-holiday); border-color:var(--cat-holiday); }
+  .sup-head{ display:grid; grid-template-columns:120px 1fr 32px; gap:8px; font-size:11px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+  .sup-card{ margin-top:6px; padding:7px 9px; border-radius:8px; background:var(--paper); border:1px solid var(--line); font-size:12px; }
+  .sup-card .sc-title{ font-weight:700; margin-bottom:3px; }
+  .sup-card table{ border-collapse:collapse; width:100%; }
+  .sup-card td{ padding:2px 6px 2px 0; vertical-align:top; }
+  .sup-card td.cls{ font-weight:700; white-space:nowrap; width:1%; padding-right:10px; }
+  @media (max-width:520px){ .sup-row, .sup-head{ grid-template-columns:90px 1fr 32px; } }
+  @media print{ .sup-card{ border-color:#bbb; background:#fff; } }
+
   /* ---------- trips & visitors guide ---------- */
   #guideOverlay .modal{ max-width:640px; }
   .guide-bar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
@@ -546,6 +564,12 @@
             <label for="evContactNote">Contact note <span style="text-transform:none;font-weight:500;">(optional)</span></label>
             <textarea id="evContactNote" maxlength="1000" rows="2" placeholder="Anything else: best time to call, payment, what to bring..."></textarea>
           </div>
+        </div>
+        <div class="sup-box" id="supBox">
+          <div class="cb-head"><span>&#128101; Supervisors (for each class)</span><small>Everyone can see this</small></div>
+          <div class="sup-head"><span>Class</span><span>Supervisor names</span><span></span></div>
+          <div id="supRows"></div>
+          <button type="button" class="btn btn-sm" onclick="addSupRow()">+ Add class</button>
         </div>
         <div class="field">
           <label class="prep-toggle" for="evPrep">
@@ -1138,11 +1162,11 @@ async function storeAdd(data){
   renderAll();
   return true;
 }
-async function storeUpdate(id, data, action){
+async function storeUpdate(id, data, action, silent){
   if (state.dbApi){
     try{
       await state.dbApi.doc('events/'+id).update(data);
-      notifyChange(action || 'updated', data);
+      if (!silent) notifyChange(action || 'updated', data);
       return true;
     }
     catch(e){ toast('Could not save that change.'); return false; }
@@ -1526,7 +1550,7 @@ function renderCatList(key){
     const notePart = e.note ? ('<div class="n">'+escapeHtml(e.note)+'</div>') : '';
     html += '<div class="'+rowClass+'" onclick="closeCatListModal(); openDayModal(&quot;'+e.date+'&quot;);">' +
       '<span class="swatch" style="background:'+catColor(e.category)+'"></span>' +
-      '<div class="info"><div class="t"><span class="d">'+label+'</span>'+escapeHtml(e.title)+timePart+(isPrep(e)?'<span class="prep-tag">Under prep</span>':'')+'</div>'+notePart+contactCardHtml(e)+'</div>' +
+      '<div class="info"><div class="t"><span class="d">'+label+'</span>'+escapeHtml(e.title)+timePart+(isPrep(e)?'<span class="prep-tag">Under prep</span>':'')+'</div>'+notePart+supCardHtml(e)+contactCardHtml(e)+'</div>' +
     '</div>';
   });
   el.innerHTML = html;
@@ -1555,12 +1579,14 @@ function updateContactBox(cat){
   const box = document.getElementById('contactBox');
   if (!box) return;
   box.classList.toggle('show', hasContactBox(cat));
+  updateSupBox(cat);
   const isTrip = cat === 'trip';
   document.getElementById('cbTitle').textContent = isTrip ? 'Trip contact' : 'Visitor details';
   document.getElementById('cbNameLabel').textContent = isTrip ? 'Contact person' : 'Visitor name';
   document.getElementById('cbLinkField').style.display = isTrip ? '' : 'none';
   document.getElementById('cbJobField').style.display = isTrip ? 'none' : '';
   renderGuidePick(cat);
+  updateSupBox(cat);
 }
 function fillContactInputs(e){
   CONTACT_FIELDS.forEach(k => { document.getElementById(CONTACT_INPUTS[k]).value = (e && e[k]) || ''; });
@@ -1593,6 +1619,54 @@ function contactCardHtml(e){
   if (e.contactNote) parts.push(`<div class="cc-note">&#128221; ${escapeHtml(e.contactNote)}</div>`);
   return parts.length ? `<div class="contact-card">${parts.join('')}</div>` : '';
 }
+/* Trip supervisors: a list of {cls, names} on each trip. Everyone can see it.
+   Changing only the supervisors does not send an email. */
+function supRowHtml(cls, names){
+  return `<div class="sup-row">
+    <input type="text" class="sup-cls" maxlength="40" placeholder="e.g. Y5 A" value="${escapeHtml(cls||'')}">
+    <input type="text" class="sup-names" maxlength="300" placeholder="e.g. Ms Sara, Ms Mona" value="${escapeHtml(names||'')}">
+    <button type="button" class="sup-del" title="Remove this class" onclick="this.parentElement.remove()">&times;</button>
+  </div>`;
+}
+function addSupRow(cls, names){
+  const wrap = document.getElementById('supRows');
+  wrap.insertAdjacentHTML('beforeend', supRowHtml(cls, names));
+  if (cls === undefined){ const ins = wrap.querySelectorAll('.sup-cls'); ins[ins.length-1].focus(); }
+}
+function fillSupInputs(e){
+  const wrap = document.getElementById('supRows');
+  wrap.innerHTML = '';
+  const list = (e && Array.isArray(e.supervisors)) ? e.supervisors : [];
+  if (list.length) list.forEach(r => addSupRow(r.cls||'', r.names||''));
+  else addSupRow('', '');
+}
+function readSupInputs(cat){
+  if (cat !== 'trip') return [];
+  const out = [];
+  document.querySelectorAll('#supRows .sup-row').forEach(row => {
+    const cls = row.querySelector('.sup-cls').value.trim();
+    const names = row.querySelector('.sup-names').value.trim();
+    if (cls || names) out.push({ cls, names });
+  });
+  return out;
+}
+function updateSupBox(cat){
+  const box = document.getElementById('supBox');
+  if (box) box.classList.toggle('show', cat === 'trip');
+}
+function supCardHtml(e){
+  if (!e || e.category !== 'trip' || !Array.isArray(e.supervisors) || !e.supervisors.length) return '';
+  const rows = e.supervisors.map(r => `<tr><td class="cls">${escapeHtml(r.cls || '—')}</td><td>${escapeHtml(r.names || '')}</td></tr>`).join('');
+  return `<div class="sup-card"><div class="sc-title">&#128101; Supervisors</div><table>${rows}</table></div>`;
+}
+function sameEventExceptSupervisors(before, data){
+  if (!before) return false;
+  const keys = Object.keys(data).filter(k => k !== 'supervisors');
+  const norm = v => (v === undefined || v === null || v === false) ? '' : v;
+  const same = keys.every(k => JSON.stringify(norm(before[k])) === JSON.stringify(norm(data[k])));
+  const supChanged = JSON.stringify(before.supervisors || []) !== JSON.stringify(data.supervisors || []);
+  return same && supChanged;
+}
 function openDayModal(iso){
   document.getElementById('evDate').value = iso;
   resetForm();
@@ -1616,6 +1690,7 @@ function renderDayList(){
       <div class="info">
         <div class="t">${escapeHtml(e.title)}${e.time ? ' &middot; '+escapeHtml(e.time) : ''}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>
         ${e.note ? `<div class="n">${escapeHtml(e.note)}</div>` : ''}
+        ${supCardHtml(e)}
         ${contactCardHtml(e)}
       </div>
       <div class="acts">
@@ -1634,6 +1709,7 @@ function editEvent(id){
   document.getElementById('evNote').value = e.note || '';
   renderCatSelect(e.category || 'event');
   fillContactInputs(e);
+  fillSupInputs(e);
   updateContactBox(e.category || 'event');
   document.getElementById('evPrep').checked = isPrep(e);
   document.getElementById('formSubmitBtn').textContent = 'Save changes';
@@ -1647,6 +1723,7 @@ function resetForm(){
   document.getElementById('evNote').value = '';
   renderCatSelect('event');
   fillContactInputs(null);
+  fillSupInputs(null);
   updateContactBox('event');
   document.getElementById('evPrep').checked = false;
   document.getElementById('formSubmitBtn').textContent = 'Add event';
@@ -1885,13 +1962,15 @@ async function submitEventForm(ev){
 
   const prep = document.getElementById('evPrep').checked;
   const editingId = document.getElementById('editingId').value;
-  const data = { date, title, category, time: time || '', note: note || '', prep, ...readContactInputs(category) };
+  const data = { date, title, category, time: time || '', note: note || '', prep, ...readContactInputs(category), supervisors: readSupInputs(category) };
   const before = editingId ? state.events.find(x => x.id === editingId) : null;
   const announcing = !!(before && isPrep(before) && !prep);
-  const ok = editingId ? await storeUpdate(editingId, data, announcing ? 'added' : 'updated') : await storeAdd(data);
+  const onlySupervisors = !announcing && sameEventExceptSupervisors(before, data);
+  const ok = editingId ? await storeUpdate(editingId, data, announcing ? 'added' : 'updated', onlySupervisors) : await storeAdd(data);
   if (ok){
     toast(prep ? (editingId ? 'Saved — still under preparation (no email sent).' : 'Added as under preparation — shown with an Under prep mark, no email sent.')
                : announcing ? 'Announced — everyone can see it and the notify list was emailed.'
+               : onlySupervisors ? 'Supervisors saved (no email sent).'
                : (editingId ? 'Event updated.' : 'Event added.'));
     resetForm();
     renderDayList();
