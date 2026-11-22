@@ -364,7 +364,8 @@
   .week-grid .day-cell{ height:auto; min-height:220px; }
   .week-grid .ev-chip{ white-space:normal; }
   /* week view: two columns (Sun|Mon, Tue|Wed, Thu|Weekend) */
-  .week-grid.two-col{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .week-grid.two-col{ grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  @media (max-width:600px){ .week-grid.two-col{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
   .week-grid.two-col .day-cell{ min-height:170px; }
   .week-grid .wk-banner{ grid-column:1 / -1; font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); padding:2px 2px 0; }
   .week-grid .wk-banner.brk{ color:var(--cat-holiday); }
@@ -1555,7 +1556,7 @@ function renderWeekView(){
   if (wkN) grid.appendChild(banner);
   const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const DAY_TINTS = ['#2f7de1','#1f9d6b','#e0a100','#d1477a','#7b5cd6','#8a948f','#8a948f'];
-  // Sun|Mon, Tue|Wed, Thu|(Fri over Sat)
+  // Sun|Mon|Tue, Wed|Thu|(Fri over Sat)  (2 columns on small screens)
   let weekendBox = null;
   for(let i=0;i<7;i++){
     const iso = addDays(start, i);
