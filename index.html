@@ -326,6 +326,16 @@
   .week-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
   .week-grid .day-cell{ height:auto; min-height:220px; }
   .week-grid .ev-chip{ white-space:normal; }
+  /* week view: two columns (Sun|Mon, Tue|Wed, Thu|Weekend) */
+  .week-grid.two-col{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .week-grid.two-col .day-cell{ min-height:170px; }
+  .week-grid .wk-banner{ grid-column:1 / -1; font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); padding:2px 2px 0; }
+  .week-grid .wk-banner.brk{ color:var(--cat-holiday); }
+  .week-grid .day-head{ display:flex; align-items:baseline; gap:8px; font-size:13px; font-weight:700; color:var(--ink); }
+  .week-grid .day-head .day-num{ font-size:12.5px; }
+  .week-grid .day-head .day-num.today{ width:auto; height:auto; padding:1px 8px; border-radius:999px; }
+  .week-grid .weekend-pair{ display:grid; grid-template-rows:1fr 1fr; gap:10px; min-width:0; }
+  .week-grid .weekend-pair .day-cell{ min-height:80px; }
 
   /* ---------- modals ---------- */
   .overlay{
@@ -1449,15 +1459,15 @@ function renderWeekView(){
 
   const grid = document.getElementById('weekGrid');
   grid.innerHTML = '';
-  grid.classList.add('with-wk');
-  const wkH = document.createElement('div'); wkH.className = 'wk-head'; wkH.textContent = 'Wk'; grid.appendChild(wkH);
-  WD_LABELS.forEach((w,i)=>{
-    const wd = document.createElement('div');
-    wd.className = 'wd-cell';
-    wd.textContent = w + (WEEKEND_IDX.has(i) ? ' \u00b7 off' : '');
-    grid.appendChild(wd);
-  });
-  grid.appendChild(wkCell(start));
+  grid.classList.remove('with-wk');
+  grid.classList.add('two-col');
+  const banner = document.createElement('div');
+  banner.className = 'wk-banner' + (wkN === 'break' ? ' brk' : '');
+  banner.textContent = wkN === 'break' ? 'Break week (not counted)' : (wkN ? 'Academic week ' + wkN : '');
+  if (wkN) grid.appendChild(banner);
+  const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  // Sun|Mon, Tue|Wed, Thu|(Fri over Sat)
+  let weekendBox = null;
   for(let i=0;i<7;i++){
     const iso = addDays(start, i);
     const isWeekend = WEEKEND_IDX.has(i);
@@ -1470,11 +1480,16 @@ function renderWeekView(){
     if (!outOfRange) cell.onclick = () => openDayModal(iso);
     const d = new Date(iso+'T00:00:00');
     cell.innerHTML = `
-      <div class="day-num ${isToday?'today':''}">${d.getDate()}</div>
+      <div class="day-head"><span>${DAY_NAMES[i]}${isWeekend?' \u00b7 off':''}</span><span class="day-num ${isToday?'today':''}">${d.getDate()} ${d.toLocaleDateString(undefined,{month:'short'})}</span></div>
       <div class="chips">
         ${evs.map(e=>`<div class="ev-chip${isPrep(e)?' prep':''}" ${isPrep(e)?'title="Under preparation — not announced yet"':''} style="background:${catColor(e.category)}">${isPrep(e)?'&#9203; ':''}${e.time?escapeHtml(e.time)+' &middot; ':''}${escapeHtml(e.title)}</div>`).join('')}
       </div>`;
-    grid.appendChild(cell);
+    if (isWeekend){
+      if (!weekendBox){ weekendBox = document.createElement('div'); weekendBox.className = 'weekend-pair'; grid.appendChild(weekendBox); }
+      weekendBox.appendChild(cell);
+    } else {
+      grid.appendChild(cell);
+    }
   }
 }
 
