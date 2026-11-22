@@ -284,6 +284,10 @@
   .wk-cell{ display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:var(--ink-soft); background:var(--paper); border:1px dashed var(--line); border-radius:9px; writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:.06em; white-space:nowrap; min-width:0; }
   .wk-cell.none{ border:none; background:transparent; }
   .wk-cell.link{ cursor:pointer; }
+  /* week view: note preview + contact */
+  .week-grid .wev .n{ font-size:11.5px; color:var(--ink); margin-top:4px; white-space:pre-line; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
+  .week-grid .wev .more{ font-size:11px; font-weight:700; color:var(--accent); margin-top:2px; cursor:pointer; }
+  .week-grid .wev .contact-card{ margin-top:5px; font-size:11px; }
   /* day view */
   .day-view-card{ --day:#888; border:2px solid var(--accent); border-radius:16px; padding:16px 18px 18px; background:color-mix(in srgb, var(--day) 10%, var(--paper-raised)); }
   .dv-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; border-bottom:2px solid color-mix(in srgb, var(--day) 55%, transparent); padding-bottom:8px; margin-bottom:12px; }
@@ -1626,8 +1630,11 @@ function weekEventsHtml(evs){
     const cat = CATEGORIES[e.category] ? CATEGORIES[e.category].label : 'Event';
     const intl = e.category === 'intl';
     const meta = intl ? '' : `<div class="m">${e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
+    const noteTxt = (!intl && e.note) ? String(e.note).trim() : '';
+    const long = noteTxt.split('\n').length > 3 || noteTxt.length > 140;
+    const note = noteTxt ? `<div class="n">${escapeHtml(noteTxt)}</div>${long ? `<div class="more" onclick="event.stopPropagation(); openDayView('${e.date}')">Read more &rarr;</div>` : ''}` : '';
     return `<div class="wev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" ${isPrep(e)?'title="Under preparation — not announced yet"':''}>
-      <div class="t">${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${meta}
+      <div class="t">${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${meta}${note}${intl ? '' : contactCardHtml(e)}
     </div>`;
   }).join('');
 }
