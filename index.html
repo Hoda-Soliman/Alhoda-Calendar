@@ -279,6 +279,13 @@
   }
 
   .day-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:8px; }
+  /* academic week number column (left of each week row) */
+  .day-grid.with-wk, .week-grid.with-wk{ grid-template-columns:34px repeat(7,minmax(0,1fr)); }
+  .wk-cell{ display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:var(--ink-soft); background:var(--paper); border:1px dashed var(--line); border-radius:9px; writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:.06em; white-space:nowrap; min-width:0; }
+  .wk-cell.none{ border:none; background:transparent; }
+  .wk-cell.brk{ color:var(--cat-holiday); border-color:var(--cat-holiday); font-weight:700; }
+  .wk-head{ text-align:center; font-size:11px; font-weight:700; color:var(--ink-soft); padding-bottom:6px; text-transform:uppercase; }
+  @media (max-width:640px){ .day-grid.with-wk, .week-grid.with-wk{ grid-template-columns:20px repeat(7,minmax(0,1fr)); } .wk-cell{ font-size:9px; } }
   .wd-cell{
     text-align:center; font-size:11.5px; font-weight:700; color:var(--ink-soft);
     letter-spacing:.04em; text-transform:uppercase; padding-bottom:6px; min-width:0;
@@ -952,6 +959,34 @@ function addDays(iso, n){
   d.setDate(d.getDate()+n);
   return ymd(d.getFullYear(), d.getMonth(), d.getDate());
 }
+/* Academic weeks: Week 1 starts Sunday 6 Sep 2026. A week whose school days (Sun-Thu)
+   are ALL holidays (e.g. winter break) is a break week: it gets no number and is not counted. */
+const ACADEMIC_WEEK1 = '2026-09-06';
+function isBreakWeek(sundayIso, holidays){
+  for (let i = 0; i < 7; i++){
+    if (WEEKEND_IDX.has(i)) continue;
+    if (!holidays.has(addDays(sundayIso, i))) return false;
+  }
+  return true;
+}
+function academicWeek(sundayIso){
+  if (sundayIso < ACADEMIC_WEEK1) return null;
+  const holidays = new Set(state.events.filter(e => e.category === 'holiday').map(e => e.date));
+  let n = 0;
+  for (let s = ACADEMIC_WEEK1; s <= sundayIso; s = addDays(s, 7)){
+    if (isBreakWeek(s, holidays)){ if (s === sundayIso) return 'break'; }
+    else n++;
+  }
+  return n;
+}
+function wkCell(sundayIso){
+  const n = academicWeek(sundayIso);
+  const c = document.createElement('div');
+  c.className = 'wk-cell' + (n ? '' : ' none') + (n === 'break' ? ' brk' : '');
+  c.textContent = n === 'break' ? 'Break' : (n ? 'Week ' + n : '');
+  if (n) c.title = n === 'break' ? 'Holiday week (not counted)' : 'Academic week ' + n;
+  return c;
+}
 function startOfWeek(iso){
   const d = new Date(iso+'T00:00:00');
   d.setDate(d.getDate() - d.getDay());
@@ -1349,6 +1384,8 @@ function renderMonthView(){
   // columns are guaranteed to line up pixel-for-pixel (one grid, one set of
   // column tracks, instead of two separately-sized grids stacked on top of
   // each other).
+  grid.classList.add('with-wk');
+  const wkH = document.createElement('div'); wkH.className = 'wk-head'; wkH.textContent = 'Wk'; grid.appendChild(wkH);
   WD_LABELS.forEach((w,i)=>{
     const wd = document.createElement('div');
     wd.className = 'wd-cell';
@@ -1356,6 +1393,9 @@ function renderMonthView(){
     grid.appendChild(wd);
   });
 
+  const firstSunday = new Date(m.year, m.month, 1 - firstDow);
+  const rowSunday = r => { const x = new Date(firstSunday); x.setDate(x.getDate() + 7*r); return ymd(x.getFullYear(), x.getMonth(), x.getDate()); };
+  grid.appendChild(wkCell(rowSunday(0)));
   for(let i=0;i<firstDow;i++){
     const cell = document.createElement('div');
     cell.className = 'day-cell out';
@@ -1368,6 +1408,7 @@ function renderMonthView(){
     const isToday = iso === todayStr;
     const evs = byDate[iso] || [];
 
+    if (dow === 0 && d > 1) grid.appendChild(wkCell(rowSunday((firstDow + d - 1) / 7)));
     const cell = document.createElement('div');
     cell.className = 'day-cell' + (isWeekend?' weekend':'');
     cell.onclick = () => openDayModal(iso);
@@ -1403,16 +1444,20 @@ function renderWeekView(){
   const title = sameMonth
     ? `${startD.toLocaleDateString(undefined,{month:'short'})} ${startD.getDate()}\u2013${endD.getDate()}, ${endD.getFullYear()}`
     : `${startD.toLocaleDateString(undefined,{month:'short',day:'numeric'})} \u2013 ${endD.toLocaleDateString(undefined,{month:'short',day:'numeric'})}, ${endD.getFullYear()}`;
-  document.getElementById('weekTitle').textContent = title;
+  const wkN = academicWeek(start);
+  document.getElementById('weekTitle').textContent = title + (wkN === 'break' ? ' \u00b7 Break' : (wkN ? ' \u00b7 Week ' + wkN : ''));
 
   const grid = document.getElementById('weekGrid');
   grid.innerHTML = '';
+  grid.classList.add('with-wk');
+  const wkH = document.createElement('div'); wkH.className = 'wk-head'; wkH.textContent = 'Wk'; grid.appendChild(wkH);
   WD_LABELS.forEach((w,i)=>{
     const wd = document.createElement('div');
     wd.className = 'wd-cell';
     wd.textContent = w + (WEEKEND_IDX.has(i) ? ' \u00b7 off' : '');
     grid.appendChild(wd);
   });
+  grid.appendChild(wkCell(start));
   for(let i=0;i<7;i++){
     const iso = addDays(start, i);
     const isWeekend = WEEKEND_IDX.has(i);
