@@ -283,6 +283,39 @@
   .day-grid.with-wk, .week-grid.with-wk{ grid-template-columns:34px repeat(7,minmax(0,1fr)); }
   .wk-cell{ display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:var(--ink-soft); background:var(--paper); border:1px dashed var(--line); border-radius:9px; writing-mode:vertical-rl; transform:rotate(180deg); letter-spacing:.06em; white-space:nowrap; min-width:0; }
   .wk-cell.none{ border:none; background:transparent; }
+  .wk-cell.link{ cursor:pointer; }
+  /* day view */
+  .day-view-card{ --day:#888; border:2px solid var(--accent); border-radius:16px; padding:16px 18px 18px; background:color-mix(in srgb, var(--day) 10%, var(--paper-raised)); }
+  .dv-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; border-bottom:2px solid color-mix(in srgb, var(--day) 55%, transparent); padding-bottom:8px; margin-bottom:12px; }
+  .dv-head .dname{ font-size:28px; font-weight:800; color:color-mix(in srgb, var(--day) 65%, var(--ink)); }
+  .dv-head .ddate{ font-size:15px; font-weight:600; color:var(--ink-soft); }
+  .dv-head .dwk{ font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft); }
+  .dv-list{ display:flex; flex-direction:column; gap:8px; }
+  .dv-list .wev{ padding:9px 12px 10px; border-left-width:5px; cursor:pointer; }
+  .dv-list .wev .t{ font-size:15.5px; }
+  .dv-list .wev .m{ font-size:12.5px; margin-top:4px; }
+  .dv-list .wev .n{ font-size:13px; color:var(--ink); margin-top:5px; white-space:pre-wrap; }
+  .dv-list .wev.intl .t{ font-size:12.5px; }
+  .dv-empty{ color:var(--ink-soft); font-size:14px; padding:14px 2px; }
+  .dv-actions{ margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+  .day-num.go, .week-grid .day-head .dname{ cursor:pointer; }
+  .day-num.go:hover, .week-grid .day-head .dname:hover{ text-decoration:underline; }
+  @media print{ .day-view-card{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+  /* month view: framed, weekday colours, clearer event cards */
+  .day-grid.with-wk{ border:2px solid var(--accent); border-radius:16px; padding:10px; background:var(--paper); }
+  .day-grid .wd-cell.tinted{ font-size:13px; font-weight:800; color:color-mix(in srgb, var(--day) 65%, var(--ink)); border-bottom:2px solid color-mix(in srgb, var(--day) 55%, transparent); margin-bottom:2px; }
+  .day-grid .day-cell.tinted{ height:auto; min-height:150px; }
+  .day-grid .day-cell.tinted .chips{ overflow:visible; gap:3px; }
+  .mev{ --c:#888; border-left:3px solid var(--c); background:color-mix(in srgb, var(--c) 15%, var(--paper-raised)); border-radius:5px; padding:2px 5px 3px; min-width:0; flex:none; }
+  .mev .t{ font-size:11px; font-weight:700; color:var(--ink); line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
+  .mev .tm{ font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; color:var(--ink-soft); margin-right:4px; }
+  .mev.prep{ border-left-style:dashed; }
+  .mev.intl{ background:transparent; border-left-width:2px; padding:1px 5px; }
+  .mev.intl .t{ font-size:9.5px; font-weight:600; color:var(--ink-soft); -webkit-line-clamp:1; }
+  @media (max-width:900px){ .mev .tm{ display:block; margin:0; } .mev .t{ -webkit-line-clamp:3; } }
+  @media (max-width:640px){ .day-grid.with-wk{ padding:5px; border-width:1.5px; } .day-grid .day-cell.tinted{ min-height:104px; } .mev .t{ font-size:9px; } .mev .tm{ font-size:8.5px; } .mev.intl .t{ font-size:8px; } .day-grid .wd-cell.tinted{ font-size:10px; } }
+  @media print{ .mev, .day-grid .day-cell.tinted{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+  .wk-cell.link:hover{ border-style:solid; border-color:var(--accent); color:var(--accent); background:var(--paper-raised); }
   .wk-cell.brk{ color:var(--cat-holiday); border-color:var(--cat-holiday); font-weight:700; }
   .wk-head{ text-align:center; font-size:11px; font-weight:700; color:var(--ink-soft); padding-bottom:6px; text-transform:uppercase; }
   @media (max-width:640px){ .day-grid.with-wk, .week-grid.with-wk{ grid-template-columns:20px repeat(7,minmax(0,1fr)); } .wk-cell{ font-size:9px; } }
@@ -336,6 +369,13 @@
   .week-grid .day-head .day-num.today{ width:auto; height:auto; padding:1px 8px; border-radius:999px; }
   .week-grid .weekend-pair{ display:grid; grid-template-rows:1fr 1fr; gap:10px; min-width:0; }
   .week-grid .weekend-pair .day-cell{ min-height:80px; }
+  /* week view: framed, each day its own soft colour, bigger day names */
+  .week-grid.two-col{ border:2px solid var(--accent); border-radius:16px; padding:12px; background:var(--paper); }
+  .week-grid.two-col .day-cell{ --day:#888; background:color-mix(in srgb, var(--day) 14%, var(--paper-raised)); border:1.5px solid color-mix(in srgb, var(--day) 45%, var(--line)); }
+  .week-grid.two-col .day-head{ border-bottom:2px solid color-mix(in srgb, var(--day) 55%, transparent); padding-bottom:5px; }
+  .week-grid.two-col .day-head .dname{ font-size:18px; font-weight:800; color:color-mix(in srgb, var(--day) 65%, var(--ink)); letter-spacing:.01em; }
+  .week-grid.two-col .weekend-pair .day-head .dname{ font-size:15px; }
+  @media print{ .week-grid.two-col .day-cell{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
   /* week view: clearer event cards */
   .week-grid .chips{ gap:5px; overflow:visible; margin-top:4px; }
   .wev{ --c:#888; border-left:4px solid var(--c); background:color-mix(in srgb, var(--c) 13%, var(--paper-raised)); border-radius:7px; padding:5px 8px 6px 8px; min-width:0; }
@@ -481,6 +521,7 @@
         <button id="tabYear" class="active" onclick="setView('year')">Year</button>
         <button id="tabMonth" onclick="setView('month')">Month</button>
         <button id="tabWeek" onclick="setView('week')">Week</button>
+        <button id="tabDay" onclick="setView('day')">Day</button>
       </div>
       <button class="btn btn-primary" onclick="openImportModal()">Import events</button>
       <button class="btn" onclick="openExportModal()">Export events</button>
@@ -526,6 +567,20 @@
       </div>
     </div>
     <div class="week-grid" id="weekGrid"></div>
+  </section>
+
+  <section id="dayView" class="hidden">
+    <div class="month-nav">
+      <div class="left">
+        <button class="icon-btn" onclick="stepDay(-1)" aria-label="Previous day">&larr;</button>
+        <h2 id="dayTitle"></h2>
+        <button class="icon-btn" onclick="stepDay(1)" aria-label="Next day">&rarr;</button>
+      </div>
+      <div class="left">
+        <button class="btn btn-sm" onclick="goToday()">Today</button>
+      </div>
+    </div>
+    <div id="dayViewBody"></div>
   </section>
 
   <div class="upcoming">
@@ -983,6 +1038,7 @@ function addDays(iso, n){
 /* Academic weeks: Week 1 starts Sunday 6 Sep 2026. A week whose school days (Sun-Thu)
    are ALL holidays (e.g. winter break) is a break week: it gets no number and is not counted. */
 const ACADEMIC_WEEK1 = '2026-09-06';
+const WEEKDAY_TINTS = ['#2f7de1','#1f9d6b','#e0a100','#d1477a','#7b5cd6','#8a948f','#8a948f'];
 function isBreakWeek(sundayIso, holidays){
   for (let i = 0; i < 7; i++){
     if (WEEKEND_IDX.has(i)) continue;
@@ -1005,7 +1061,11 @@ function wkCell(sundayIso){
   const c = document.createElement('div');
   c.className = 'wk-cell' + (n ? '' : ' none') + (n === 'break' ? ' brk' : '');
   c.textContent = n === 'break' ? 'Break' : (n ? 'Week ' + n : '');
-  if (n) c.title = n === 'break' ? 'Holiday week (not counted)' : 'Academic week ' + n;
+  if (n){
+    c.title = (n === 'break' ? 'Holiday week (not counted)' : 'Academic week ' + n) + ' — click to open this week';
+    c.classList.add('link');
+    c.onclick = () => { state.focusDate = sundayIso; setView('week'); window.scrollTo({top: document.getElementById('weekGrid').getBoundingClientRect().top + window.scrollY - 120, behavior:'smooth'}); };
+  }
   return c;
 }
 function startOfWeek(iso){
@@ -1296,11 +1356,23 @@ function setView(v){
   document.getElementById('tabYear').classList.toggle('active', v==='year');
   document.getElementById('tabMonth').classList.toggle('active', v==='month');
   document.getElementById('tabWeek').classList.toggle('active', v==='week');
+  document.getElementById('tabDay').classList.toggle('active', v==='day');
+  document.getElementById('dayView').classList.toggle('hidden', v!=='day');
   document.getElementById('yearView').classList.toggle('hidden', v!=='year');
   document.getElementById('monthView').classList.toggle('hidden', v!=='month');
   document.getElementById('weekView').classList.toggle('hidden', v!=='week');
   if (v==='month') renderMonthView();
   if (v==='week') renderWeekView();
+  if (v==='day') renderDayView();
+}
+function stepDay(delta){
+  state.focusDate = clampISO(addDays(state.focusDate, delta));
+  renderDayView();
+}
+function openDayView(iso){
+  state.focusDate = clampISO(iso);
+  setView('day');
+  window.scrollTo({top: document.getElementById('dayView').getBoundingClientRect().top + window.scrollY - 100, behavior:'smooth'});
 }
 function stepMonth(delta){
   state.monthIdx = Math.min(11, Math.max(0, state.monthIdx + delta));
@@ -1318,6 +1390,7 @@ function goToday(){
   state.monthIdx = defaultMonthIdx;
   state.focusDate = todayISOClamped();
   if (state.view==='week'){ renderWeekView(); }
+  else if (state.view==='day'){ renderDayView(); }
   else { setView('month'); renderMonthView(); }
 }
 
@@ -1409,7 +1482,8 @@ function renderMonthView(){
   const wkH = document.createElement('div'); wkH.className = 'wk-head'; wkH.textContent = 'Wk'; grid.appendChild(wkH);
   WD_LABELS.forEach((w,i)=>{
     const wd = document.createElement('div');
-    wd.className = 'wd-cell';
+    wd.className = 'wd-cell tinted';
+    wd.style.setProperty('--day', WEEKDAY_TINTS[i]);
     wd.textContent = w + (WEEKEND_IDX.has(i) ? ' · off' : '');
     grid.appendChild(wd);
   });
@@ -1431,14 +1505,13 @@ function renderMonthView(){
 
     if (dow === 0 && d > 1) grid.appendChild(wkCell(rowSunday((firstDow + d - 1) / 7)));
     const cell = document.createElement('div');
-    cell.className = 'day-cell' + (isWeekend?' weekend':'');
+    cell.className = 'day-cell tinted' + (isWeekend?' weekend':'');
+    cell.style.setProperty('--day', WEEKDAY_TINTS[dow]);
     cell.onclick = () => openDayModal(iso);
 
     cell.innerHTML = `
-      <div class="day-num ${isToday?'today':''}">${d}</div>
-      <div class="chips">
-        ${evs.map(e=>`<div class="ev-chip${isPrep(e)?' prep':''}" ${isPrep(e)?'title="Under preparation — not announced yet"':''} style="background:${catColor(e.category)}">${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>`).join('')}
-      </div>`;
+      <div class="day-num go ${isToday?'today':''}" title="Open this day" onclick="event.stopPropagation(); openDayView('${iso}')">${d}</div>
+      <div class="chips">${monthEventsHtml(evs)}</div>`;
     grid.appendChild(cell);
   }
   // Trailing filler cells so the last week row is a full 7 columns too,
@@ -1477,6 +1550,7 @@ function renderWeekView(){
   banner.textContent = wkN === 'break' ? 'Break week (not counted)' : (wkN ? 'Academic week ' + wkN : '');
   if (wkN) grid.appendChild(banner);
   const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const DAY_TINTS = ['#2f7de1','#1f9d6b','#e0a100','#d1477a','#7b5cd6','#8a948f','#8a948f'];
   // Sun|Mon, Tue|Wed, Thu|(Fri over Sat)
   let weekendBox = null;
   for(let i=0;i<7;i++){
@@ -1491,8 +1565,9 @@ function renderWeekView(){
     if (!outOfRange) cell.onclick = () => openDayModal(iso);
     const d = new Date(iso+'T00:00:00');
     cell.innerHTML = `
-      <div class="day-head"><span>${DAY_NAMES[i]}${isWeekend?' \u00b7 off':''}</span><span class="day-num ${isToday?'today':''}">${d.getDate()} ${d.toLocaleDateString(undefined,{month:'short'})}</span></div>
+      <div class="day-head"><span class="dname" title="Open this day" onclick="event.stopPropagation(); openDayView('${iso}')">${DAY_NAMES[i]}</span>${isWeekend?'<span>off</span>':''}<span class="day-num ${isToday?'today':''}">${d.getDate()} ${d.toLocaleDateString(undefined,{month:'short'})}</span></div>
       <div class="chips">${weekEventsHtml(evs)}</div>`;
+    cell.style.setProperty('--day', DAY_TINTS[i]);
     if (isWeekend){
       if (!weekendBox){ weekendBox = document.createElement('div'); weekendBox.className = 'weekend-pair'; grid.appendChild(weekendBox); }
       weekendBox.appendChild(cell);
@@ -1502,6 +1577,47 @@ function renderWeekView(){
   }
 }
 
+/* ---------------- day view ---------------- */
+function renderDayView(){
+  const iso = clampISO(state.focusDate || todayISOClamped());
+  state.focusDate = iso;
+  const d = new Date(iso+'T00:00:00');
+  const dow = d.getDay();
+  const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const wkN = academicWeek(startOfWeek(iso));
+  document.getElementById('dayTitle').textContent = d.toLocaleDateString(undefined,{weekday:'short', day:'numeric', month:'short', year:'numeric'});
+  const evs = (eventsByDate()[iso] || []);
+  const rank = e => (e.category === 'intl' ? 2 : (e.time ? 0 : 1));
+  const list = evs.slice().sort((a,b) => rank(a) - rank(b) || (a.time||'').localeCompare(b.time||''));
+  const cards = list.map(e => {
+    const cat = CATEGORIES[e.category] ? CATEGORIES[e.category].label : 'Event';
+    const intl = e.category === 'intl';
+    const meta = intl ? '' : `<div class="m">${e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
+    const note = (!intl && e.note) ? `<div class="n">${escapeHtml(e.note)}</div>` : '';
+    return `<div class="wev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" onclick="openDayModal('${iso}')" title="Click to view or edit">
+      <div class="t">${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${meta}${note}${contactCardHtml(e)}
+    </div>`;
+  }).join('');
+  const body = document.getElementById('dayViewBody');
+  body.innerHTML = `<div class="day-view-card" style="--day:${WEEKDAY_TINTS[dow]}">
+      <div class="dv-head">
+        <div><span class="dname">${DAY_NAMES[dow]}</span> <span class="ddate">${d.toLocaleDateString(undefined,{day:'numeric', month:'long', year:'numeric'})}</span></div>
+        <span class="dwk">${wkN === 'break' ? 'Break week' : (wkN ? 'Academic week ' + wkN : '')}${WEEKEND_IDX.has(dow) ? ' \u00b7 Weekend' : ''}</span>
+      </div>
+      <div class="dv-list">${cards || '<div class="dv-empty">No events on this day.</div>'}</div>
+      <div class="dv-actions"><button class="btn btn-sm" onclick="openDayModal('${iso}')">+ Add or edit events</button></div>
+    </div>`;
+}
+/* Month view event cards (compact): time first, International Days last and lighter. */
+function monthEventsHtml(evs){
+  const rank = e => (e.category === 'intl' ? 2 : (e.time ? 0 : 1));
+  const list = evs.slice().sort((a,b) => rank(a) - rank(b) || (a.time||'').localeCompare(b.time||''));
+  return list.map(e => {
+    const intl = e.category === 'intl';
+    const tip = escapeHtml(e.title) + (isPrep(e) ? ' (under preparation)' : '');
+    return `<div class="mev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" title="${tip}"><div class="t">${!intl && e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div></div>`;
+  }).join('');
+}
 /* Week view event cards: time first, International Days last and lighter. */
 function weekEventsHtml(evs){
   const rank = e => (e.category === 'intl' ? 2 : (e.time ? 0 : 1));
@@ -1548,6 +1664,7 @@ function renderAll(){
   renderYearView();
   if (state.view==='month') renderMonthView();
   if (state.view==='week') renderWeekView();
+  if (state.view==='day') renderDayView();
   renderUpcoming();
 }
 
