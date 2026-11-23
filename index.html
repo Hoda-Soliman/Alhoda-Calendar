@@ -288,6 +288,10 @@
   .week-grid .wev .n{ font-size:11.5px; color:var(--ink); margin-top:4px; white-space:pre-line; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
   .week-grid .wev .more{ font-size:11px; font-weight:700; color:var(--accent); margin-top:2px; cursor:pointer; }
   .week-grid .wev .contact-card{ margin-top:5px; font-size:11px; }
+  /* international days: hidden in print unless celebrated */
+  .btn-celebrate.on{ border-color:var(--cat-intl) !important; color:var(--cat-intl) !important; font-weight:800; }
+  .cel-btn{ border:1px solid var(--line); background:var(--paper-raised); border-radius:999px; font-size:11px; padding:1px 8px; margin-left:6px; cursor:pointer; color:var(--ink-soft); font-family:inherit; }
+  @media print{ .mev.intl, .wev.intl, .up-card.intl, .cel-btn{ display:none !important; } }
   /* place inside school */
   .place-box{ display:none; }
   .place-box.show{ display:block; }
@@ -1434,8 +1438,22 @@ function goToday(){
 }
 
 /* ---------------- data helpers ---------------- */
+/* An International Day the school celebrates is shown like a normal event: always visible
+   (even when International Days are hidden) and included when printing. */
+function isCelebrated(e){ return !!(e && e.category === 'intl' && e.celebrate); }
+function isPlainIntl(e){ return !!(e && e.category === 'intl' && !e.celebrate); }
 function filteredEvents(){
-  return visibleEvents().filter(e => state.filter.has(e.category || 'event'));
+  return visibleEvents().filter(e => state.filter.has(e.category || 'event') || isCelebrated(e));
+}
+function toggleCelebrate(id){
+  requireUnlock(async () => {
+    const e = state.events.find(x => x.id === id);
+    if (!e || e.category !== 'intl') return;
+    const on = !e.celebrate;
+    // category is sent so no notification email goes out for International Days
+    const ok = await storeUpdate(id, { category:'intl', celebrate: on });
+    if (ok){ toast(on ? '\ud83c\udf89 We celebrate "' + e.title + '" \u2014 it now shows like a normal event and prints.' : 'Back to a normal International Day.'); if (document.getElementById('dayOverlay').classList.contains('show')) renderDayList(); }
+  });
 }
 function eventsByDate(){
   const map = {};
@@ -1626,15 +1644,15 @@ function renderDayView(){
   const wkN = academicWeek(startOfWeek(iso));
   document.getElementById('dayTitle').textContent = d.toLocaleDateString(undefined,{weekday:'short', day:'numeric', month:'short', year:'numeric'});
   const evs = (eventsByDate()[iso] || []);
-  const rank = e => (e.category === 'intl' ? 2 : (e.time ? 0 : 1));
+  const rank = e => (isPlainIntl(e) ? 2 : (e.time ? 0 : 1));
   const list = evs.slice().sort((a,b) => rank(a) - rank(b) || (a.time||'').localeCompare(b.time||''));
   const cards = list.map(e => {
     const cat = CATEGORIES[e.category] ? CATEGORIES[e.category].label : 'Event';
-    const intl = e.category === 'intl';
+    const intl = isPlainIntl(e);
     const meta = intl ? '' : `<div class="m">${e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${placeHtml(e)}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
     const note = (!intl && e.note) ? `<div class="n">${escapeHtml(e.note)}</div>` : '';
     return `<div class="wev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" onclick="openDayModal('${iso}')" title="Click to view or edit">
-      <div class="t">${iconHtml(e)}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${meta}${note}${contactCardHtml(e)}
+      <div class="t">${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}${e.category==='intl' ? `<button type="button" class="cel-btn" onclick="event.stopPropagation(); toggleCelebrate('${e.id}')">${isCelebrated(e) ? '&#127881; We celebrate it &#10003;' : '&#127881; Celebrate'}</button>` : ''}</div>${meta}${note}${contactCardHtml(e)}
     </div>`;
   }).join('');
   const body = document.getElementById('dayViewBody');
@@ -1649,27 +1667,27 @@ function renderDayView(){
 }
 /* Month view event cards (compact): time first, International Days last and lighter. */
 function monthEventsHtml(evs){
-  const rank = e => (e.category === 'intl' ? 2 : (e.time ? 0 : 1));
+  const rank = e => (isPlainIntl(e) ? 2 : (e.time ? 0 : 1));
   const list = evs.slice().sort((a,b) => rank(a) - rank(b) || (a.time||'').localeCompare(b.time||''));
   return list.map(e => {
-    const intl = e.category === 'intl';
+    const intl = isPlainIntl(e);
     const tip = escapeHtml(e.title) + (e.place && PLACE_CATS.has(e.category) ? ' \u2014 ' + escapeHtml(e.place) : '') + (isPrep(e) ? ' (under preparation)' : '');
-    return `<div class="mev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" title="${tip}"><div class="t">${!intl && e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}${iconHtml(e)}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${placeHtml(e)}</div>`;
+    return `<div class="mev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" title="${tip}"><div class="t">${!intl && e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${placeHtml(e)}</div>`;
   }).join('');
 }
 /* Week view event cards: time first, International Days last and lighter. */
 function weekEventsHtml(evs){
-  const rank = e => (e.category === 'intl' ? 2 : (e.time ? 0 : 1));
+  const rank = e => (isPlainIntl(e) ? 2 : (e.time ? 0 : 1));
   const list = evs.slice().sort((a,b) => rank(a) - rank(b) || (a.time||'').localeCompare(b.time||''));
   return list.map(e => {
     const cat = CATEGORIES[e.category] ? CATEGORIES[e.category].label : 'Event';
-    const intl = e.category === 'intl';
+    const intl = isPlainIntl(e);
     const meta = intl ? '' : `<div class="m">${e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${placeHtml(e)}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
     const noteTxt = (!intl && e.note) ? String(e.note).trim() : '';
     const long = noteTxt.split('\n').length > 3 || noteTxt.length > 140;
     const note = noteTxt ? `<div class="n">${escapeHtml(noteTxt)}</div>${long ? `<div class="more" onclick="event.stopPropagation(); openDayView('${e.date}')">Read more &rarr;</div>` : ''}` : '';
     return `<div class="wev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" ${isPrep(e)?'title="Under preparation — not announced yet"':''}>
-      <div class="t">${iconHtml(e)}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${meta}${note}${intl ? '' : contactCardHtml(e)}
+      <div class="t">${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${meta}${note}${intl ? '' : contactCardHtml(e)}
     </div>`;
   }).join('');
 }
@@ -1689,7 +1707,7 @@ function renderUpcoming(){
   row.innerHTML = list.map(e=>{
     const d = new Date(e.date+'T00:00:00');
     const label = d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
-    return `<div class="up-card${isPrep(e)?' prep':''}">
+    return `<div class="up-card${isPrep(e)?' prep':''}${isPlainIntl(e)?' intl':''}">
       <div class="date">${label}</div>
       <div class="cat-bar" style="background:${catColor(e.category)}"></div>
       <div class="ttl">${iconHtml(e)}${escapeHtml(e.title)}${isPrep(e)?'<span class="prep-tag">Under prep</span>':''}</div>
@@ -1963,13 +1981,14 @@ function renderDayList(){
     <div class="ev-row" data-id="${e.id}">
       <span class="swatch" style="background:${catColor(e.category)}"></span>
       <div class="info">
-        <div class="t">${iconHtml(e)}${escapeHtml(e.title)}${e.time ? ' &middot; '+escapeHtml(e.time) : ''}${e.place && PLACE_CATS.has(e.category) ? ' &middot; ' + placeHtml(e) : ''}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>
+        <div class="t">${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${escapeHtml(e.title)}${e.time ? ' &middot; '+escapeHtml(e.time) : ''}${e.place && PLACE_CATS.has(e.category) ? ' &middot; ' + placeHtml(e) : ''}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>
         ${e.note ? `<div class="n">${escapeHtml(e.note)}</div>` : ''}
         ${supCardHtml(e)}
         ${contactCardHtml(e)}
       </div>
       <div class="acts">
         ${isPrep(e) ? `<button type="button" class="btn btn-sm btn-ghost btn-announce" onclick="announceEvent('${e.id}')" title="Show it to everyone and email the notify list">Announce</button>` : ''}
+        ${e.category === 'intl' ? `<button type="button" class="btn btn-sm btn-ghost btn-celebrate${isCelebrated(e)?' on':''}" onclick="toggleCelebrate('${e.id}')" title="${isCelebrated(e) ? 'We celebrate this day \u2014 click to undo' : 'We celebrate this day: show it like a normal event and include it when printing'}">${isCelebrated(e) ? '&#127881; Celebrating' : '&#127881; Celebrate'}</button>` : ''}
         <button type="button" class="btn btn-sm btn-ghost" onclick="editEvent('${e.id}')">Edit</button>
         <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete(this,'${e.id}')">Delete</button>
       </div>
