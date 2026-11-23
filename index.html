@@ -288,6 +288,13 @@
   .week-grid .wev .n{ font-size:11.5px; color:var(--ink); margin-top:4px; white-space:pre-line; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
   .week-grid .wev .more{ font-size:11px; font-weight:700; color:var(--accent); margin-top:2px; cursor:pointer; }
   .week-grid .wev .contact-card{ margin-top:5px; font-size:11px; }
+  /* place inside school */
+  .place-box{ display:none; }
+  .place-box.show{ display:block; }
+  .place-row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .place-row select, .place-row input{ flex:1; min-width:160px; border:1px solid var(--line); background:var(--paper-raised); color:var(--ink); padding:9px 10px; border-radius:8px; font-size:13.5px; font-family:inherit; }
+  .wev .m .pl, .ev-row .pl{ font-weight:600; color:var(--ink); }
+  .mev .pl{ display:block; font-size:9.5px; font-weight:600; color:var(--ink-soft); }
   /* event icons (logos) */
   .ev-icon{ width:16px; height:16px; object-fit:contain; vertical-align:-3px; margin-right:4px; border-radius:3px; background:#fff; }
   .mev .ev-icon{ width:13px; height:13px; vertical-align:-2px; margin-right:3px; }
@@ -637,6 +644,13 @@
           <input type="hidden" id="evIconId" value="">
           <input type="file" id="iconFile" accept="image/*" style="display:none" onchange="uploadIcon(this)">
           <div class="icon-pick" id="iconPick"></div>
+        </div>
+        <div class="field place-box" id="placeBox">
+          <label for="evPlaceSel">Place <span style="text-transform:none;font-weight:500;">(where in school)</span></label>
+          <div class="place-row">
+            <select id="evPlaceSel" onchange="onPlaceSel()"></select>
+            <input type="text" id="evPlaceOther" maxlength="80" placeholder="Write the place" style="display:none">
+          </div>
         </div>
         <div class="contact-box" id="contactBox">
           <div class="cb-head"><span id="cbTitle">Trip contact</span><small>&#128274; Only editors can see this</small></div>
@@ -1617,7 +1631,7 @@ function renderDayView(){
   const cards = list.map(e => {
     const cat = CATEGORIES[e.category] ? CATEGORIES[e.category].label : 'Event';
     const intl = e.category === 'intl';
-    const meta = intl ? '' : `<div class="m">${e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
+    const meta = intl ? '' : `<div class="m">${e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${placeHtml(e)}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
     const note = (!intl && e.note) ? `<div class="n">${escapeHtml(e.note)}</div>` : '';
     return `<div class="wev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" onclick="openDayModal('${iso}')" title="Click to view or edit">
       <div class="t">${iconHtml(e)}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${meta}${note}${contactCardHtml(e)}
@@ -1639,8 +1653,8 @@ function monthEventsHtml(evs){
   const list = evs.slice().sort((a,b) => rank(a) - rank(b) || (a.time||'').localeCompare(b.time||''));
   return list.map(e => {
     const intl = e.category === 'intl';
-    const tip = escapeHtml(e.title) + (isPrep(e) ? ' (under preparation)' : '');
-    return `<div class="mev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" title="${tip}"><div class="t">${!intl && e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}${iconHtml(e)}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div></div>`;
+    const tip = escapeHtml(e.title) + (e.place && PLACE_CATS.has(e.category) ? ' \u2014 ' + escapeHtml(e.place) : '') + (isPrep(e) ? ' (under preparation)' : '');
+    return `<div class="mev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" title="${tip}"><div class="t">${!intl && e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}${iconHtml(e)}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${placeHtml(e)}</div>`;
   }).join('');
 }
 /* Week view event cards: time first, International Days last and lighter. */
@@ -1650,7 +1664,7 @@ function weekEventsHtml(evs){
   return list.map(e => {
     const cat = CATEGORIES[e.category] ? CATEGORIES[e.category].label : 'Event';
     const intl = e.category === 'intl';
-    const meta = intl ? '' : `<div class="m">${e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
+    const meta = intl ? '' : `<div class="m">${e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${placeHtml(e)}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
     const noteTxt = (!intl && e.note) ? String(e.note).trim() : '';
     const long = noteTxt.split('\n').length > 3 || noteTxt.length > 140;
     const note = noteTxt ? `<div class="n">${escapeHtml(noteTxt)}</div>${long ? `<div class="more" onclick="event.stopPropagation(); openDayView('${e.date}')">Read more &rarr;</div>` : ''}` : '';
@@ -1798,6 +1812,39 @@ function highlightCat(key){
     o.classList.toggle('sel', o.dataset.key===key);
   });
   updateContactBox(key);
+  updatePlaceBox(key);
+}
+/* Place inside the school, for Events, Lesson Activities and Visits. Shown to everyone. */
+const PLACES = ['Auditorium','Buses waiting area','Playground','Foundation playground'];
+const PLACE_CATS = new Set(['event','lesson','visit']);
+function updatePlaceBox(cat){
+  const box = document.getElementById('placeBox');
+  if (box) box.classList.toggle('show', PLACE_CATS.has(cat));
+}
+function onPlaceSel(){
+  const other = document.getElementById('evPlaceSel').value === '__other';
+  const inp = document.getElementById('evPlaceOther');
+  inp.style.display = other ? '' : 'none';
+  if (other) inp.focus();
+}
+function fillPlace(place){
+  const sel = document.getElementById('evPlaceSel');
+  sel.innerHTML = '<option value="">\u2014 No place \u2014</option>' + PLACES.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('') + '<option value="__other">Other\u2026</option>';
+  const v = place || '';
+  if (!v) sel.value = '';
+  else if (PLACES.includes(v)) sel.value = v;
+  else { sel.value = '__other'; }
+  document.getElementById('evPlaceOther').value = (v && !PLACES.includes(v)) ? v : '';
+  onPlaceSel();
+}
+function readPlace(cat){
+  if (!PLACE_CATS.has(cat)) return '';
+  const v = document.getElementById('evPlaceSel').value;
+  if (v === '__other') return document.getElementById('evPlaceOther').value.trim();
+  return v;
+}
+function placeHtml(e, cls){
+  return (e && e.place && PLACE_CATS.has(e.category)) ? `<span class="${cls||'pl'}">&#128205; ${escapeHtml(e.place)}</span>` : '';
 }
 /* Trip / visitor contact details. Saved on the event, shown only to editors, never put in emails. */
 const CONTACT_FIELDS = ['placeLink','contactName','contactPhone','contactJob','contactNote'];
@@ -1916,7 +1963,7 @@ function renderDayList(){
     <div class="ev-row" data-id="${e.id}">
       <span class="swatch" style="background:${catColor(e.category)}"></span>
       <div class="info">
-        <div class="t">${iconHtml(e)}${escapeHtml(e.title)}${e.time ? ' &middot; '+escapeHtml(e.time) : ''}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>
+        <div class="t">${iconHtml(e)}${escapeHtml(e.title)}${e.time ? ' &middot; '+escapeHtml(e.time) : ''}${e.place && PLACE_CATS.has(e.category) ? ' &middot; ' + placeHtml(e) : ''}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>
         ${e.note ? `<div class="n">${escapeHtml(e.note)}</div>` : ''}
         ${supCardHtml(e)}
         ${contactCardHtml(e)}
@@ -1939,6 +1986,8 @@ function editEvent(id){
   fillContactInputs(e);
   fillSupInputs(e);
   pickIcon(e.iconId || '');
+  fillPlace(e.place || '');
+  updatePlaceBox(e.category || 'event');
   updateContactBox(e.category || 'event');
   document.getElementById('evPrep').checked = isPrep(e);
   document.getElementById('formSubmitBtn').textContent = 'Save changes';
@@ -1954,6 +2003,8 @@ function resetForm(){
   fillContactInputs(null);
   fillSupInputs(null);
   pickIcon('');
+  fillPlace('');
+  updatePlaceBox('event');
   updateContactBox('event');
   document.getElementById('evPrep').checked = false;
   document.getElementById('formSubmitBtn').textContent = 'Add event';
@@ -2260,7 +2311,7 @@ async function submitEventForm(ev){
 
   const prep = document.getElementById('evPrep').checked;
   const editingId = document.getElementById('editingId').value;
-  const data = { date, title, category, time: time || '', note: note || '', prep, ...readContactInputs(category), supervisors: readSupInputs(category), iconId: document.getElementById('evIconId').value || '' };
+  const data = { date, title, category, time: time || '', note: note || '', prep, ...readContactInputs(category), supervisors: readSupInputs(category), iconId: document.getElementById('evIconId').value || '', place: readPlace(category) };
   const before = editingId ? state.events.find(x => x.id === editingId) : null;
   const announcing = !!(before && isPrep(before) && !prep);
   const onlySupervisors = !announcing && sameEventExceptSupervisors(before, data);
