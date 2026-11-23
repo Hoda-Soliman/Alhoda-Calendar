@@ -288,6 +288,18 @@
   .week-grid .wev .n{ font-size:11.5px; color:var(--ink); margin-top:4px; white-space:pre-line; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
   .week-grid .wev .more{ font-size:11px; font-weight:700; color:var(--accent); margin-top:2px; cursor:pointer; }
   .week-grid .wev .contact-card{ margin-top:5px; font-size:11px; }
+  /* event icons (logos) */
+  .ev-icon{ width:16px; height:16px; object-fit:contain; vertical-align:-3px; margin-right:4px; border-radius:3px; background:#fff; }
+  .mev .ev-icon{ width:13px; height:13px; vertical-align:-2px; margin-right:3px; }
+  .dv-list .ev-icon{ width:24px; height:24px; vertical-align:-6px; margin-right:6px; }
+  .up-card .ev-icon{ width:18px; height:18px; }
+  .icon-pick{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+  .ip-btn{ position:relative; display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--line); border-radius:9px; padding:4px 9px; background:var(--paper-raised); color:var(--ink); font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .ip-btn img{ width:22px; height:22px; object-fit:contain; border-radius:4px; background:#fff; }
+  .ip-btn.sel{ border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .ip-btn.add{ border-style:dashed; color:var(--ink-soft); }
+  .ip-del{ position:absolute; top:-7px; right:-7px; width:17px; height:17px; border-radius:50%; border:none; background:var(--accent); color:#fff; font-size:11px; line-height:17px; padding:0; cursor:pointer; display:none; }
+  .ip-btn:hover .ip-del{ display:block; }
   /* day view */
   .day-view-card{ --day:#888; border:2px solid var(--accent); border-radius:16px; padding:16px 18px 18px; background:color-mix(in srgb, var(--day) 10%, var(--paper-raised)); }
   .dv-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; border-bottom:2px solid color-mix(in srgb, var(--day) 55%, transparent); padding-bottom:8px; margin-bottom:12px; }
@@ -619,6 +631,12 @@
         <div class="field">
           <label>Category</label>
           <div class="cat-select" id="catSelect"></div>
+        </div>
+        <div class="field">
+          <label>Icon <span style="text-transform:none;font-weight:500;">(optional &mdash; e.g. a logo like IBSEA)</span></label>
+          <input type="hidden" id="evIconId" value="">
+          <input type="file" id="iconFile" accept="image/*" style="display:none" onchange="uploadIcon(this)">
+          <div class="icon-pick" id="iconPick"></div>
         </div>
         <div class="contact-box" id="contactBox">
           <div class="cb-head"><span id="cbTitle">Trip contact</span><small>&#128274; Only editors can see this</small></div>
@@ -1012,6 +1030,7 @@ const state = {
   dbApi: null,
   localMode: false,
   guide: [],       // trips & visitors guide entries
+  icons: [],       // uploaded icons/logos {id, name, data}
 };
 // Show / hide International Days: each person's choice is remembered on their own device.
 const INTL_PREF_KEY = 'cal-hide-intl';
@@ -1142,6 +1161,7 @@ async function initStore(){
     await seedIfEmpty();
     subscribeEvents();
     subscribeGuide();
+    subscribeIcons();
   }catch(e){
     console.error('Could not reach the shared calendar, showing a local copy instead:', e);
     enableLocalMode();
@@ -1600,7 +1620,7 @@ function renderDayView(){
     const meta = intl ? '' : `<div class="m">${e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
     const note = (!intl && e.note) ? `<div class="n">${escapeHtml(e.note)}</div>` : '';
     return `<div class="wev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" onclick="openDayModal('${iso}')" title="Click to view or edit">
-      <div class="t">${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${meta}${note}${contactCardHtml(e)}
+      <div class="t">${iconHtml(e)}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${meta}${note}${contactCardHtml(e)}
     </div>`;
   }).join('');
   const body = document.getElementById('dayViewBody');
@@ -1620,7 +1640,7 @@ function monthEventsHtml(evs){
   return list.map(e => {
     const intl = e.category === 'intl';
     const tip = escapeHtml(e.title) + (isPrep(e) ? ' (under preparation)' : '');
-    return `<div class="mev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" title="${tip}"><div class="t">${!intl && e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div></div>`;
+    return `<div class="mev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" title="${tip}"><div class="t">${!intl && e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}${iconHtml(e)}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div></div>`;
   }).join('');
 }
 /* Week view event cards: time first, International Days last and lighter. */
@@ -1635,7 +1655,7 @@ function weekEventsHtml(evs){
     const long = noteTxt.split('\n').length > 3 || noteTxt.length > 140;
     const note = noteTxt ? `<div class="n">${escapeHtml(noteTxt)}</div>${long ? `<div class="more" onclick="event.stopPropagation(); openDayView('${e.date}')">Read more &rarr;</div>` : ''}` : '';
     return `<div class="wev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" ${isPrep(e)?'title="Under preparation — not announced yet"':''}>
-      <div class="t">${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${meta}${note}${intl ? '' : contactCardHtml(e)}
+      <div class="t">${iconHtml(e)}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${meta}${note}${intl ? '' : contactCardHtml(e)}
     </div>`;
   }).join('');
 }
@@ -1658,7 +1678,7 @@ function renderUpcoming(){
     return `<div class="up-card${isPrep(e)?' prep':''}">
       <div class="date">${label}</div>
       <div class="cat-bar" style="background:${catColor(e.category)}"></div>
-      <div class="ttl">${escapeHtml(e.title)}${isPrep(e)?'<span class="prep-tag">Under prep</span>':''}</div>
+      <div class="ttl">${iconHtml(e)}${escapeHtml(e.title)}${isPrep(e)?'<span class="prep-tag">Under prep</span>':''}</div>
     </div>`;
   }).join('');
 }
@@ -1896,7 +1916,7 @@ function renderDayList(){
     <div class="ev-row" data-id="${e.id}">
       <span class="swatch" style="background:${catColor(e.category)}"></span>
       <div class="info">
-        <div class="t">${escapeHtml(e.title)}${e.time ? ' &middot; '+escapeHtml(e.time) : ''}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>
+        <div class="t">${iconHtml(e)}${escapeHtml(e.title)}${e.time ? ' &middot; '+escapeHtml(e.time) : ''}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>
         ${e.note ? `<div class="n">${escapeHtml(e.note)}</div>` : ''}
         ${supCardHtml(e)}
         ${contactCardHtml(e)}
@@ -1918,6 +1938,7 @@ function editEvent(id){
   renderCatSelect(e.category || 'event');
   fillContactInputs(e);
   fillSupInputs(e);
+  pickIcon(e.iconId || '');
   updateContactBox(e.category || 'event');
   document.getElementById('evPrep').checked = isPrep(e);
   document.getElementById('formSubmitBtn').textContent = 'Save changes';
@@ -1932,6 +1953,7 @@ function resetForm(){
   renderCatSelect('event');
   fillContactInputs(null);
   fillSupInputs(null);
+  pickIcon('');
   updateContactBox('event');
   document.getElementById('evPrep').checked = false;
   document.getElementById('formSubmitBtn').textContent = 'Add event';
@@ -1948,6 +1970,74 @@ function confirmDelete(btn, id){
   btn.textContent = 'Confirm?';
   setTimeout(()=>{ if(btn){ btn.dataset.confirm=''; btn.textContent = original; } }, 2500);
 }
+/* ---------------- event icons (logos) ---------------- */
+/* Stored in the 'icons' collection as small PNG images (max 96px). Everyone sees them; editors add/remove. */
+function subscribeIcons(){
+  try{
+    state.dbApi.collection('icons').onSnapshot(
+      snap => { state.icons = snap.docs.map(d => ({ id:d.id, ...d.data() })); renderIconPick(); renderAll(); if (document.getElementById('dayOverlay').classList.contains('show')) renderDayList(); },
+      err => console.error('Could not load icons:', err)
+    );
+  }catch(e){ console.error('Could not load icons:', e); }
+}
+function iconHtml(e){
+  if (!e || !e.iconId) return '';
+  const ic = (state.icons || []).find(x => x.id === e.iconId);
+  return ic ? `<img class="ev-icon" src="${ic.data}" alt="${escapeHtml(ic.name||'')}" title="${escapeHtml(ic.name||'')}">` : '';
+}
+function renderIconPick(){
+  const el = document.getElementById('iconPick');
+  if (!el) return;
+  const cur = document.getElementById('evIconId').value;
+  const list = (state.icons || []).slice().sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  el.innerHTML = `<button type="button" class="ip-btn${cur ? '' : ' sel'}" onclick="pickIcon('')">None</button>` +
+    list.map(ic => `<button type="button" class="ip-btn${ic.id===cur ? ' sel' : ''}" onclick="pickIcon('${ic.id}')" title="${escapeHtml(ic.name||'')}"><img src="${ic.data}" alt="">${escapeHtml(ic.name||'')}<span class="ip-del" title="Remove from the icon list" onclick="event.stopPropagation(); deleteIcon('${ic.id}')">&times;</span></button>`).join('') +
+    `<button type="button" class="ip-btn add" onclick="document.getElementById('iconFile').click()">+ Upload icon</button>`;
+}
+function pickIcon(id){
+  document.getElementById('evIconId').value = id || '';
+  renderIconPick();
+}
+function uploadIcon(input){
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  if (!/^image\//.test(file.type)){ toast('Please choose an image file (PNG or JPG).'); return; }
+  requireUnlock(() => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = async () => {
+        const max = 96, sc = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.width * sc)); c.height = Math.max(1, Math.round(img.height * sc));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        const data = c.toDataURL('image/png');
+        const name = file.name.replace(/\.[^.]+$/, '').slice(0, 40);
+        if (!state.dbApi){ toast('Icons need the shared calendar connection.'); return; }
+        try{
+          const ref = await state.dbApi.collection('icons').add({ name, data });
+          pickIcon(ref.id);
+          toast('Icon added: ' + name + '. It is selected for this event.');
+        }catch(e){ console.error(e); toast('Could not save the icon.'); }
+      };
+      img.onerror = () => toast('Could not read that image.');
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function deleteIcon(id){
+  const ic = (state.icons || []).find(x => x.id === id);
+  if (!ic) return;
+  const used = state.events.filter(e => e.iconId === id).length;
+  if (!confirm('Remove the icon "' + (ic.name||'') + '" from the list?' + (used ? '\n\nIt is used on ' + used + ' event(s); they will show no icon.' : ''))) return;
+  requireUnlock(async () => {
+    try{ await state.dbApi.doc('icons/'+id).delete(); if (document.getElementById('evIconId').value === id) pickIcon(''); toast('Icon removed.'); }
+    catch(e){ toast('Could not remove the icon.'); }
+  });
+}
+
 /* ---------------- trips & visitors guide ---------------- */
 /* Stored in the 'guide' collection. Editors only. Changes here never send emails. */
 let guideTab = 'trip';
@@ -2170,7 +2260,7 @@ async function submitEventForm(ev){
 
   const prep = document.getElementById('evPrep').checked;
   const editingId = document.getElementById('editingId').value;
-  const data = { date, title, category, time: time || '', note: note || '', prep, ...readContactInputs(category), supervisors: readSupInputs(category) };
+  const data = { date, title, category, time: time || '', note: note || '', prep, ...readContactInputs(category), supervisors: readSupInputs(category), iconId: document.getElementById('evIconId').value || '' };
   const before = editingId ? state.events.find(x => x.id === editingId) : null;
   const announcing = !!(before && isPrep(before) && !prep);
   const onlySupervisors = !announcing && sameEventExceptSupervisors(before, data);
