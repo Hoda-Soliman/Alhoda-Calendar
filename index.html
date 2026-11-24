@@ -34,6 +34,7 @@
     --cat-lesson:#B1701A;
     --cat-prep:#B01060;
     --cat-intl:#12ADB1;
+    --cat-intl2:#E2603C;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
@@ -60,6 +61,7 @@
       --cat-lesson:#A55826;
       --cat-prep:#CE6F91;
       --cat-intl:#97E9EB;
+      --cat-intl2:#F4A285;
     }
   }
   :root[data-theme="dark"]{
@@ -86,6 +88,7 @@
     --cat-lesson:#A55826;
     --cat-prep:#CE6F91;
     --cat-intl:#97E9EB;
+    --cat-intl2:#F4A285;
   }
 
   *{ box-sizing:border-box; }
@@ -1062,6 +1065,15 @@ const CATEGORIES = {
    While ticked: everyone sees it marked "Under prep" (also when printed), and no email goes out.
    Unticking it ("Announce") shows it to everyone and emails the notify list. */
 const PREP_KEY = '__prep';
+/* Other World Days: popular non-UN days (World Hello Day, Earth Hour, Pi Day ...).
+   They are International Days (category 'intl') with other:true, so they behave exactly the same
+   (no emails, show/hide switch, celebrate, hidden in print) but have their own colour. */
+const OTHER_KEY = '__other';
+function isOtherDay(e){ return !!(e && e.category === 'intl' && e.other); }
+function evColor(e){
+  if (isOtherDay(e)) return getComputedStyle(document.documentElement).getPropertyValue('--cat-intl2').trim();
+  return catColor(e && e.category);
+}
 function isPrep(e){ return !!(e && e.prep); }
 function normalizeLegacy(e){
   // Events saved under the old "Under Preparation" category become Trip + under preparation.
@@ -1540,6 +1552,14 @@ function renderLegend(){
   tg.title = intlOn ? 'Hide International Days from the calendar' : 'Show International Days on the calendar';
   tg.innerHTML = `<span class="sw"></span>International Days: ${intlOn ? 'shown' : 'hidden'}`;
   tg.onclick = toggleIntlDays;
+  if (state.events.some(isOtherDay)){
+    const ob = document.createElement('button');
+    ob.className = 'chip on';
+    ob.title = 'View all Other World Days (not UN days)';
+    ob.innerHTML = `<span class="dot" style="background:${getComputedStyle(document.documentElement).getPropertyValue('--cat-intl2').trim()}"></span>Other World Day`;
+    ob.onclick = () => openCatListModal(OTHER_KEY);
+    el.appendChild(ob);
+  }
   el.appendChild(tg);
   const nPrep = state.events.filter(isPrep).length;
   if (nPrep){
@@ -1679,7 +1699,7 @@ function renderYearView(){
       const evs = byDate[iso] || [];
       let dots = '';
       if (evs.length){
-        dots = '<div class="mini-dots">' + evs.slice(0,4).map(e=>`<span class="${isPrep(e)?'prep':''}" style="background:${catColor(e.category)}"></span>`).join('') + '</div>';
+        dots = '<div class="mini-dots">' + evs.slice(0,4).map(e=>`<span class="${isPrep(e)?'prep':''}" style="background:${evColor(e)}"></span>`).join('') + '</div>';
       }
       html += `<div class="mini-day ${isWeekend?'weekend':''} ${isToday?'today':''}" title="${evs.map(e=>e.title).join(', ')}"
                  onclick="event.stopPropagation(); jumpToDay('${iso}', ${idx})">${d}${dots}</div>`;
@@ -1834,7 +1854,7 @@ function renderDayView(){
     const intl = isPlainIntl(e);
     const meta = intl ? '' : `<div class="m">${timeText(e) ? `<span class="tm">${escapeHtml(timeText(e))}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${placeHtml(e)}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
     const note = (!intl && e.note) ? `<div class="n">${escapeHtml(e.note)}</div>` : '';
-    return `<div class="wev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" onclick="openDayModal('${iso}')" title="Click to view or edit">
+    return `<div class="wev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${evColor(e)}" onclick="openDayModal('${iso}')" title="Click to view or edit">
       <div class="t">${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}${e.category==='intl' ? `<button type="button" class="cel-btn" onclick="event.stopPropagation(); toggleCelebrate('${e.id}')">${isCelebrated(e) ? '&#127881; We celebrate it &#10003;' : '&#127881; Celebrate'}</button>` : ''}</div>${meta}${note}${contactCardHtml(e)}
     </div>`;
   }).join('');
@@ -1855,7 +1875,7 @@ function monthEventsHtml(evs){
   return list.map(e => {
     const intl = isPlainIntl(e);
     const tip = escapeHtml(e.title) + (e.place && PLACE_CATS.has(e.category) ? ' \u2014 ' + escapeHtml(e.place) : '') + (isPrep(e) ? ' (under preparation)' : '');
-    return `<div class="mev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" title="${tip}"><div class="t">${!intl && timeText(e) ? `<span class="tm">${escapeHtml(timeText(e))}</span>` : ''}${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${placeHtml(e)}</div>`;
+    return `<div class="mev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${evColor(e)}" title="${tip}"><div class="t">${!intl && timeText(e) ? `<span class="tm">${escapeHtml(timeText(e))}</span>` : ''}${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${placeHtml(e)}</div>`;
   }).join('');
 }
 /* Week view event cards: time first, International Days last and lighter. */
@@ -1869,7 +1889,7 @@ function weekEventsHtml(evs){
     const noteTxt = (!intl && e.note) ? String(e.note).trim() : '';
     const long = noteTxt.split('\n').length > 3 || noteTxt.length > 140;
     const note = noteTxt ? `<div class="n">${escapeHtml(noteTxt)}</div>${long ? `<div class="more" onclick="event.stopPropagation(); openDayView('${e.date}')">Read more &rarr;</div>` : ''}` : '';
-    return `<div class="wev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" ${isPrep(e)?'title="Under preparation — not announced yet"':''}>
+    return `<div class="wev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${evColor(e)}" ${isPrep(e)?'title="Under preparation — not announced yet"':''}>
       <div class="t">${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${meta}${note}${intl ? '' : contactCardHtml(e)}
     </div>`;
   }).join('');
@@ -1892,7 +1912,7 @@ function renderUpcoming(){
     const label = d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
     return `<div class="up-card${isPrep(e)?' prep':''}${isPlainIntl(e)?' intl':''}">
       <div class="date">${label}</div>
-      <div class="cat-bar" style="background:${catColor(e.category)}"></div>
+      <div class="cat-bar" style="background:${evColor(e)}"></div>
       <div class="ttl">${iconHtml(e)}${escapeHtml(e.title)}${isPrep(e)?'<span class="prep-tag">Under prep</span>':''}</div>
     </div>`;
   }).join('');
@@ -1916,7 +1936,7 @@ function renderAll(){
 let currentCatKey = null;
 function openCatListModal(key){
   currentCatKey = key;
-  const cfg = key === PREP_KEY ? { label:'Under preparation' } : CATEGORIES[key];
+  const cfg = key === PREP_KEY ? { label:'Under preparation' } : key === OTHER_KEY ? { label:'Other World Days' } : CATEGORIES[key];
   document.getElementById('catListTitle').textContent = cfg ? cfg.label : 'Events';
   document.getElementById('catFrom').value = '';
   document.getElementById('catTo').value = '';
@@ -1946,7 +1966,7 @@ function catListRangeText(){
   return 'Through ' + fmt(toVal);
 }
 function printCatList(){
-  const cfg = currentCatKey === PREP_KEY ? { label:'Under preparation' } : CATEGORIES[currentCatKey];
+  const cfg = currentCatKey === PREP_KEY ? { label:'Under preparation' } : currentCatKey === OTHER_KEY ? { label:'Other World Days' } : CATEGORIES[currentCatKey];
   const label = cfg ? cfg.label : (document.getElementById('catListTitle').textContent || 'Events');
   const printedOn = new Date().toLocaleDateString(undefined, {weekday:'long', month:'long', day:'numeric', year:'numeric'});
   document.getElementById('printOnlyHead').innerHTML =
@@ -1960,13 +1980,13 @@ function printCatList(){
 }
 function renderCatList(key){
   const el = document.getElementById('catEvList');
-  const cfg = key === PREP_KEY ? { label:'Under preparation' } : CATEGORIES[key];
+  const cfg = key === PREP_KEY ? { label:'Under preparation' } : key === OTHER_KEY ? { label:'Other World Days' } : CATEGORIES[key];
   const today = todayISO();
   const fromVal = document.getElementById('catFrom').value;
   const toVal = document.getElementById('catTo').value;
   document.getElementById('catRangeLabel').textContent = catListRangeText();
   let list = visibleEvents()
-    .filter(e => key === PREP_KEY ? isPrep(e) : (e.category || 'event') === key)
+    .filter(e => key === PREP_KEY ? isPrep(e) : key === OTHER_KEY ? isOtherDay(e) : (e.category || 'event') === key)
     .slice()
     .sort((a,b) => (a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
   if (fromVal) list = list.filter(e => e.date >= fromVal);
@@ -1993,7 +2013,7 @@ function renderCatList(key){
     const timePart = timeText(e) ? (' &middot; '+escapeHtml(timeText(e))) : '';
     const notePart = e.note ? ('<div class="n">'+escapeHtml(e.note)+'</div>') : '';
     html += '<div class="'+rowClass+'" onclick="closeCatListModal(); openDayModal(&quot;'+e.date+'&quot;);">' +
-      '<span class="swatch" style="background:'+catColor(e.category)+'"></span>' +
+      '<span class="swatch" style="background:'+evColor(e)+'"></span>' +
       '<div class="info"><div class="t"><span class="d">'+label+'</span>'+escapeHtml(e.title)+timePart+(isPrep(e)?'<span class="prep-tag">Under prep</span>':'')+'</div>'+notePart+supCardHtml(e)+contactCardHtml(e)+'</div>' +
     '</div>';
   });
@@ -2173,7 +2193,7 @@ function renderDayList(){
   }
   el.innerHTML = list.map(e=>`
     <div class="ev-row" data-id="${e.id}">
-      <span class="swatch" style="background:${catColor(e.category)}"></span>
+      <span class="swatch" style="background:${evColor(e)}"></span>
       <div class="info">
         <div class="t">${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${escapeHtml(e.title)}${timeText(e) ? ' &middot; '+escapeHtml(timeText(e)) : ''}${e.place && PLACE_CATS.has(e.category) ? ' &middot; ' + placeHtml(e) : ''}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>
         ${e.note ? `<div class="n">${escapeHtml(e.note)}</div>` : ''}
