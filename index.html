@@ -261,7 +261,7 @@
   @media (max-width:520px){ .guide-card .g-top{ flex-direction:column; } .guide-card .g-acts{ justify-content:flex-start; } #guideForm .row2{ grid-template-columns:1fr; } }
 
   /* ---------- year view ---------- */
-  #yearView.hidden, #monthView.hidden{ display:none; }
+  #yearView.hidden, #monthView.hidden, #weekView.hidden, #dayView.hidden, #audView.hidden{ display:none; }
   .year-grid{
     display:grid; grid-template-columns:repeat(auto-fill, minmax(252px,1fr));
     gap:16px;
@@ -344,6 +344,19 @@
   .aud-mi.clash{ background:#fde2e2; }
   .aud-mi b{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:9.5px; }
   .aud-seg{ display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; }
+  /* grade drop-down + grade ticks in the event form */
+  .grade-sel{ font-weight:700; cursor:pointer; padding-right:10px; }
+  .grade-sel.on{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .grade-note{ display:none; align-items:center; gap:10px; flex-wrap:wrap; background:var(--paper-raised); border:2px solid var(--accent); border-radius:10px; padding:8px 14px; font-size:13.5px; margin-bottom:14px; }
+  .grade-note.show{ display:flex; }
+  .grade-note b{ color:var(--accent); font-size:15px; }
+  .grade-note button{ border:1px solid var(--line); background:var(--paper); border-radius:999px; padding:3px 10px; font:700 12px inherit; font-family:inherit; cursor:pointer; }
+  .grade-picks{ display:flex; flex-wrap:wrap; gap:5px; }
+  .grade-picks label{ display:inline-flex; align-items:center; gap:4px; border:1px solid var(--line); border-radius:999px; padding:4px 10px; font-size:12px; font-weight:700; cursor:pointer; text-transform:none; letter-spacing:0; background:var(--paper-raised); color:var(--ink); margin:0; }
+  .grade-picks input{ width:auto; margin:0; }
+  .grade-picks label:has(input:checked){ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .grade-hint{ display:block; font-size:11.5px; color:var(--ink-soft); margin-top:5px; }
+  @media print{ .grade-sel{ display:none; } .grade-note{ border-width:1px; } .grade-note button{ display:none; } }
   .aud-seg button{ border:none; background:var(--paper-raised); padding:4px 12px; font-size:12px; font-weight:700; cursor:pointer; color:var(--ink-soft); font-family:inherit; }
   .aud-seg button.active{ background:var(--accent); color:#fff; }
   .aud-rooms{ margin-bottom:6px; }
@@ -623,6 +636,11 @@
       <button class="btn btn-primary" onclick="openImportModal()">Import events</button>
       <button class="btn" onclick="openExportModal()">Export events</button>
       <button class="btn" onclick="openDayModal(todayISOClamped())">+ Add event</button>
+      <select class="btn grade-sel" id="gradeSel" onchange="setGrade(this.value)" title="Show the events of one grade only">
+        <option value="">&#127891; All grades</option>
+        <optgroup label="PYP"><option>FS1</option><option>FS2</option><option>Y1</option><option>Y2</option><option>Y3</option><option>Y4</option><option>Y5</option></optgroup>
+        <optgroup label="MYP"><option>MYP1</option><option>MYP2</option><option>MYP3</option><option>MYP4</option></optgroup>
+      </select>
       <button class="btn" onclick="openGuide()" title="Places for trips and visitors' contacts (editors only)">&#128210; Guide</button>
       <button class="btn btn-ghost" onclick="window.print()" title="Print current view">Print</button>
       <button class="btn btn-ghost" id="editorBtn" onclick="editorLogin()" title="Editors: unlock to edit and to see contact details and the guide">&#128274; Editor</button>
@@ -631,6 +649,7 @@
 
   <div id="notice" class="notice"><span>&#9888;</span><span id="noticeText">Connecting to the shared calendar&hellip;</span></div>
 
+  <div class="grade-note" id="gradeNote"></div>
   <div class="legend" id="legend"></div>
 
   <section id="yearView">
@@ -793,6 +812,11 @@
               <small>Everyone sees it on the calendar marked &#9203; Under prep, but no email is sent. Untick it (or press Announce) when it's ready &mdash; then the notify list gets an email.</small>
             </span>
           </label>
+        </div>
+        <div class="field" id="gradeField">
+          <label>Grades <span style="text-transform:none;font-weight:500;">(optional &mdash; who is it for?)</span></label>
+          <div class="grade-picks" id="evGrades"></div>
+          <small class="grade-hint">Leave empty and the calendar finds the grade from the title (e.g. &ldquo;Y3 to Y5&rdquo;, &ldquo;MYP4&rdquo;, &ldquo;Fs2&rdquo;).</small>
         </div>
         <div class="field">
           <label>Time <span style="text-transform:none;font-weight:500;">(optional)</span></label>
@@ -1651,8 +1675,74 @@ function goToday(){
    (even when International Days are hidden) and included when printing. */
 function isCelebrated(e){ return !!(e && e.category === 'intl' && e.celebrate); }
 function isPlainIntl(e){ return !!(e && e.category === 'intl' && !e.celebrate); }
+/* ---------------- grades ---------------- */
+const GRADES = ['FS1','FS2','Y1','Y2','Y3','Y4','Y5','MYP1','MYP2','MYP3','MYP4'];
+const PYP_GRADES = ['FS1','FS2','Y1','Y2','Y3','Y4','Y5'], MYP_GRADES = ['MYP1','MYP2','MYP3','MYP4'];
+// "3/4", "3 & 4", "3-5", "3 to 5", "1, 2" -> numbers
+function gradeNums(a, sep, b){
+  a = +a; if (b === undefined || b === '') return [a];
+  b = +b;
+  if (/to|-|\u2013/i.test(sep || '') && b > a) { const r = []; for (let i = a; i <= b; i++) r.push(i); return r; }
+  return [a, b];
+}
+/* Which grades is an event for? Ticked grades win; otherwise read them from the title, note and supervisor classes. */
+function eventGrades(e){
+  if (!e) return [];
+  if (Array.isArray(e.grades) && e.grades.length) return e.grades.filter(g => GRADES.includes(g));
+  const out = new Set();
+  const add = g => { if (GRADES.includes(g)) out.add(g); };
+  const t = ' ' + [e.title || '', e.note || ''].join(' ') + ' ';
+  const SEP = '\\s*(to|-|\u2013|\\/|&|and|,)\\s*';
+  // MYP: MYP4, MYP 3/4, MYP3-4, MYP1 & MYP2
+  t.replace(new RegExp('\\bMYP\\s*([1-5])(?:' + SEP + '(?:MYP\\s*)?([1-5])(?![0-9a-z]))?(?!\\d)', 'gi'), (m, a, sep, b) => { gradeNums(a, sep, b).forEach(n => add('MYP' + n)); return m; });
+  // Years: Y3, Year 1, Y3 to Y5, Years 3-5, Grade 2, Y1/Y2
+  t.replace(new RegExp('\\b(?:Y|Yr|Year|Years|Grade|Grades|G)\\s*([1-6])(?:' + SEP + '(?:Y|Yr|Year|Grade|G)?\\s*([1-6])(?![0-9a-z]))?(?!\\d)', 'gi'), (m, a, sep, b) => { gradeNums(a, sep, b).forEach(n => add('Y' + n)); return m; });
+  // Foundation stage: FS1, Fs 2, F1, KG1, FS1 & FS2
+  t.replace(new RegExp('\\b(?:FS|F|KG)\\s*([12])(?:' + SEP + '(?:FS|F|KG)?\\s*([12])(?![0-9a-z]))?(?!\\d)', 'gi'), (m, a, sep, b) => { gradeNums(a, sep, b).forEach(n => add('FS' + n)); return m; });
+  // Whole sections
+  // "MYP" / "PYP" with no number = the whole section (e.g. "Y5+MYP camp")
+  if (/\bMYP\b(?!\s*\d)/i.test(t) && !MYP_GRADES.some(g => out.has(g))) MYP_GRADES.forEach(add);
+  if (/\bPYP\b/i.test(t) && !PYP_GRADES.some(g => out.has(g))) PYP_GRADES.forEach(add);
+  // Supervisor classes: 4A -> Y4, FS1B -> FS1, MYP2A -> MYP2
+  (e.supervisors || []).forEach(sv => {
+    const c = String(sv.cls || '').trim();
+    let m;
+    if ((m = c.match(/^(?:FS|F|KG)\s*([12])/i))) add('FS' + m[1]);
+    else if ((m = c.match(/^MYP\s*([1-5])/i))) add('MYP' + m[1]);
+    else if ((m = c.match(/^(?:Y|Year)?\s*([1-5])\s*[A-Z]?$/i))) add('Y' + m[1]);
+  });
+  return GRADES.filter(g => out.has(g));
+}
+function renderGradePicks(sel){
+  const el = document.getElementById('evGrades');
+  if (!el) return;
+  const set = new Set(sel || []);
+  el.innerHTML = GRADES.map(g => `<label><input type="checkbox" value="${g}" ${set.has(g) ? 'checked' : ''}>${g}</label>`).join('');
+}
+function readGrades(){ return [...document.querySelectorAll('#evGrades input:checked')].map(i => i.value); }
+state.grade = '';
+function setGrade(g){
+  state.grade = GRADES.includes(g) ? g : '';
+  const sel = document.getElementById('gradeSel');
+  if (sel){ sel.value = state.grade; sel.classList.toggle('on', !!state.grade); }
+  renderAll();
+  if (state.grade) toast('Showing ' + state.grade + ' events only.');
+}
+function renderGradeNote(){
+  const el = document.getElementById('gradeNote');
+  if (!el) return;
+  el.classList.toggle('show', !!state.grade);
+  el.innerHTML = state.grade ? `&#127891; Showing only <b>${state.grade}</b> events (and holidays). <button type="button" onclick="setGrade('')">Show all grades</button>` : '';
+}
+/* With a grade chosen: that grade's events, plus holidays and International / Other World Days (they keep their own switches). */
+function gradeOk(e){
+  if (!state.grade) return true;
+  if (e.category === 'holiday' || e.category === 'intl') return true;
+  return eventGrades(e).includes(state.grade);
+}
 function filteredEvents(){
   return visibleEvents().filter(e => {
+    if (!gradeOk(e)) return false;
     if (isCelebrated(e)) return true;                       // celebrated days always show
     if (isOtherDay(e)) return !state.hideOther;             // Other World Days: their own switch
     return state.filter.has(e.category || 'event');         // UN International Days: the International switch
@@ -1954,6 +2044,7 @@ function renderAll(){
   const eb = document.getElementById('editorBtn');
   if (eb) eb.innerHTML = isUnlocked() ? '&#128275; Editor' : '&#128274; Editor';
   renderLegend();
+  renderGradeNote();
   renderYearView();
   if (state.view==='month') renderMonthView();
   if (state.view==='week') renderWeekView();
@@ -2117,6 +2208,7 @@ function updateContactBox(cat){
   refreshCbFilled();
   box.classList.toggle('show', hasContactBox(cat));
   updateSupBox(cat);
+  const gf = document.getElementById('gradeField'); if (gf) gf.style.display = cat === 'intl' ? 'none' : '';
   const isTrip = cat === 'trip';
   document.getElementById('cbTitle').textContent = isTrip ? 'Trip contact' : 'Visitor details';
   document.getElementById('cbNameLabel').textContent = isTrip ? 'Contact person' : 'Visitor name';
@@ -2244,6 +2336,7 @@ function editEvent(id){
   document.getElementById('editingId').value = id;
   document.getElementById('evTitle').value = e.title || '';
   fillTimeInputs(e);
+  renderGradePicks(eventGrades(e));
   document.getElementById('evNote').value = e.note || '';
   renderCatSelect(e.category || 'event');
   fillContactInputs(e);
@@ -2261,6 +2354,7 @@ function resetForm(){
   document.getElementById('editingId').value = '';
   document.getElementById('evTitle').value = '';
   fillTimeInputs(null);
+  renderGradePicks(state.grade ? [state.grade] : []);
   document.getElementById('evNote').value = '';
   renderCatSelect('event');
   fillContactInputs(null);
@@ -2806,7 +2900,7 @@ async function submitEventForm(ev){
 
   const prep = document.getElementById('evPrep').checked;
   const editingId = document.getElementById('editingId').value;
-  const data = { date, title, category, time: time || '', timeTo, during, note: note || '', prep, ...readContactInputs(category), supervisors: readSupInputs(category), iconId: document.getElementById('evIconId').value || '', place: readPlace(category) };
+  const data = { date, title, category, time: time || '', timeTo, during, note: note || '', prep, ...readContactInputs(category), supervisors: readSupInputs(category), iconId: document.getElementById('evIconId').value || '', place: readPlace(category), grades: category === 'intl' ? [] : readGrades() };
   const before = editingId ? state.events.find(x => x.id === editingId) : null;
   const announcing = !!(before && isPrep(before) && !prep);
   const onlySupervisors = !announcing && sameEventExceptSupervisors(before, data);
