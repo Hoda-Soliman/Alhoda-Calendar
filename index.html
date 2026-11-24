@@ -288,6 +288,26 @@
   .week-grid .wev .n{ font-size:11.5px; color:var(--ink); margin-top:4px; white-space:pre-line; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
   .week-grid .wev .more{ font-size:11px; font-weight:700; color:var(--accent); margin-top:2px; cursor:pointer; }
   .week-grid .wev .contact-card{ margin-top:5px; font-size:11px; }
+  /* auditorium calendar */
+  .aud-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; border:2px solid var(--accent); border-radius:16px; padding:12px; background:var(--paper); }
+  @media (max-width:600px){ .aud-grid{ grid-template-columns:1fr; } }
+  .aud-day{ --day:#888; border:1.5px solid color-mix(in srgb, var(--day) 45%, var(--line)); background:color-mix(in srgb, var(--day) 10%, var(--paper-raised)); border-radius:12px; padding:10px; min-height:120px; display:flex; flex-direction:column; gap:6px; }
+  .aud-day .ah{ display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid color-mix(in srgb, var(--day) 55%, transparent); padding-bottom:4px; }
+  .aud-day .ah b{ font-size:17px; color:color-mix(in srgb, var(--day) 65%, var(--ink)); }
+  .aud-day .ah span{ font-size:12px; color:var(--ink-soft); font-weight:600; }
+  .aud-item{ border-left:4px solid var(--c, #7a1418); background:var(--paper-raised); border-radius:7px; padding:6px 8px; cursor:pointer; }
+  .aud-item.cal{ --c: var(--cat-event); }
+  .aud-item .tm{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:700; color:var(--ink); }
+  .aud-item .tt{ font-size:13px; font-weight:700; color:var(--ink); line-height:1.3; }
+  .aud-item .sub{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; white-space:pre-line; }
+  .aud-tag{ display:inline-block; font-size:9.5px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; border-radius:999px; padding:1px 6px; margin-left:4px; vertical-align:middle; }
+  .aud-tag.cal{ background:color-mix(in srgb, var(--cat-event) 15%, transparent); color:var(--cat-event); }
+  .aud-tag.only{ background:color-mix(in srgb, var(--accent) 12%, transparent); color:var(--accent); }
+  .aud-tag.clash{ background:#fde2e2; color:#b3261e; }
+  .aud-empty{ font-size:12px; color:var(--ink-soft); }
+  .aud-add{ margin-top:auto; align-self:flex-start; font-size:11.5px; font-weight:700; color:var(--accent); background:none; border:1px dashed var(--accent); border-radius:999px; padding:2px 10px; cursor:pointer; font-family:inherit; }
+  .aud-bar{ display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; font-size:12.5px; color:var(--ink-soft); }
+  @media print{ .aud-add, .aud-bar .btn{ display:none !important; } .aud-day, .aud-item{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
   /* international days: hidden in print unless celebrated */
   .btn-celebrate.on{ border-color:var(--cat-intl) !important; color:var(--cat-intl) !important; font-weight:800; }
   .cel-btn{ border:1px solid var(--line); background:var(--paper-raised); border-radius:999px; font-size:11px; padding:1px 8px; margin-left:6px; cursor:pointer; color:var(--ink-soft); font-family:inherit; }
@@ -550,6 +570,7 @@
         <button id="tabMonth" onclick="setView('month')">Month</button>
         <button id="tabWeek" onclick="setView('week')">Week</button>
         <button id="tabDay" onclick="setView('day')">Day</button>
+        <button id="tabAud" onclick="setView('aud')">&#127917; Auditorium</button>
       </div>
       <button class="btn btn-primary" onclick="openImportModal()">Import events</button>
       <button class="btn" onclick="openExportModal()">Export events</button>
@@ -609,6 +630,24 @@
       </div>
     </div>
     <div id="dayViewBody"></div>
+  </section>
+
+  <section id="audView" class="hidden">
+    <div class="month-nav">
+      <div class="left">
+        <button class="icon-btn" onclick="stepAudWeek(-1)" aria-label="Previous week">&larr;</button>
+        <h2 id="audTitle"></h2>
+        <button class="icon-btn" onclick="stepAudWeek(1)" aria-label="Next week">&rarr;</button>
+      </div>
+      <div class="left">
+        <button class="btn btn-sm" onclick="goToday()">Today</button>
+      </div>
+    </div>
+    <div class="aud-bar">
+      <span>&#127917; Auditorium (open 8:00&ndash;3:00) &mdash; calendar events with Place = Auditorium <span class="aud-tag cal">Calendar</span> plus bookings only for the auditorium <span class="aud-tag only">Auditorium only</span>. Many items per day are fine; <span class="aud-tag clash">Time clash</span> means two times overlap.</span>
+      <button class="btn btn-sm btn-primary" onclick="openAudForm()">+ Book the auditorium</button>
+    </div>
+    <div class="aud-grid" id="audGrid"></div>
   </section>
 
   <div class="upcoming">
@@ -749,6 +788,48 @@
       </div>
       <div class="cat-range-label" id="catRangeLabel"></div>
       <div class="ev-list cat-ev-list" id="catEvList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Auditorium booking modal -->
+<div class="overlay" id="audOverlay" onclick="if(event.target===this) closeAudForm()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="audFormTitle">&#127917; Book the auditorium</h3>
+      <button class="close-x" onclick="closeAudForm()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;">Only for the auditorium: it does <b>not</b> appear on the main calendar and sends <b>no email</b>. The auditorium is open <b>8:00 &ndash; 3:00</b>. You can book many items on the same day &mdash; it is a clash only when two times overlap.</p>
+      <form id="audForm" onsubmit="submitAudForm(event)">
+        <input type="hidden" id="audEditId" value="">
+        <div class="field">
+          <label for="audDate">Date</label>
+          <input type="date" id="audDate" required>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="audFrom">From</label><input type="time" id="audFrom" min="08:00" max="15:00" step="300" required></div>
+          <div class="field"><label for="audTo">To</label><input type="time" id="audTo" min="08:00" max="15:00" step="300" required></div>
+        </div>
+        <div class="field">
+          <label for="audWhat">Activity / lesson</label>
+          <input type="text" id="audWhat" maxlength="140" required placeholder="e.g. Y4 Music rehearsal, MYP2 Drama lesson">
+        </div>
+        <div class="field">
+          <label for="audBy">Teacher / booked by <span style="text-transform:none;font-weight:500;">(optional)</span></label>
+          <input type="text" id="audBy" maxlength="80" placeholder="Name">
+        </div>
+        <div class="field">
+          <label for="audNote">Note <span style="text-transform:none;font-weight:500;">(optional)</span></label>
+          <textarea id="audNote" maxlength="800" rows="2" placeholder="Sound system, chairs, projector..."></textarea>
+        </div>
+        <div id="audClash" style="display:none;color:#b3261e;font-size:12.5px;font-weight:700;margin:-4px 0 10px;"></div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-danger" id="audDelBtn" style="display:none;margin-right:auto" onclick="deleteAudBooking()">Delete</button>
+          <button type="button" class="btn btn-ghost" onclick="closeAudForm()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="audSaveBtn">Save booking</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -1049,6 +1130,7 @@ const state = {
   localMode: false,
   guide: [],       // trips & visitors guide entries
   icons: [],       // uploaded icons/logos {id, name, data}
+  aud: [],         // auditorium-only bookings {id, date, from, to, what, by, note}
 };
 // Show / hide International Days: each person's choice is remembered on their own device.
 const INTL_PREF_KEY = 'cal-hide-intl';
@@ -1180,6 +1262,7 @@ async function initStore(){
     subscribeEvents();
     subscribeGuide();
     subscribeIcons();
+    subscribeAud();
   }catch(e){
     console.error('Could not reach the shared calendar, showing a local copy instead:', e);
     enableLocalMode();
@@ -1401,12 +1484,15 @@ function setView(v){
   document.getElementById('tabWeek').classList.toggle('active', v==='week');
   document.getElementById('tabDay').classList.toggle('active', v==='day');
   document.getElementById('dayView').classList.toggle('hidden', v!=='day');
+  document.getElementById('tabAud').classList.toggle('active', v==='aud');
+  document.getElementById('audView').classList.toggle('hidden', v!=='aud');
   document.getElementById('yearView').classList.toggle('hidden', v!=='year');
   document.getElementById('monthView').classList.toggle('hidden', v!=='month');
   document.getElementById('weekView').classList.toggle('hidden', v!=='week');
   if (v==='month') renderMonthView();
   if (v==='week') renderWeekView();
   if (v==='day') renderDayView();
+  if (v==='aud') renderAudView();
 }
 function stepDay(delta){
   state.focusDate = clampISO(addDays(state.focusDate, delta));
@@ -1434,6 +1520,7 @@ function goToday(){
   state.focusDate = todayISOClamped();
   if (state.view==='week'){ renderWeekView(); }
   else if (state.view==='day'){ renderDayView(); }
+  else if (state.view==='aud'){ renderAudView(); }
   else { setView('month'); renderMonthView(); }
 }
 
@@ -1725,6 +1812,7 @@ function renderAll(){
   if (state.view==='month') renderMonthView();
   if (state.view==='week') renderWeekView();
   if (state.view==='day') renderDayView();
+  if (state.view==='aud') renderAudView();
   renderUpcoming();
 }
 
@@ -2040,6 +2128,118 @@ function confirmDelete(btn, id){
   btn.textContent = 'Confirm?';
   setTimeout(()=>{ if(btn){ btn.dataset.confirm=''; btn.textContent = original; } }, 2500);
 }
+/* ---------------- auditorium calendar ---------------- */
+/* Shows calendar events whose Place is Auditorium, plus auditorium-only bookings kept in the
+   'auditorium' collection. Bookings never appear on the main calendar and never send email. */
+function subscribeAud(){
+  try{
+    state.dbApi.collection('auditorium').onSnapshot(
+      snap => { state.aud = snap.docs.map(d => ({ id:d.id, ...d.data() })); if (state.view==='aud') renderAudView(); },
+      err => console.error('Could not load auditorium bookings:', err)
+    );
+  }catch(e){ console.error('Could not load auditorium bookings:', e); }
+}
+function audItemsFor(iso){
+  const cal = visibleEvents().filter(e => e.date === iso && e.place === 'Auditorium' && PLACE_CATS.has(e.category))
+    .map(e => ({ kind:'cal', id:e.id, date:iso, from:e.time||'', to:'', what:e.title, by:'', note:e.note||'', ev:e }));
+  const own = (state.aud || []).filter(b => b.date === iso).map(b => ({ kind:'only', id:b.id, date:iso, from:b.from||'', to:b.to||'', what:b.what||'', by:b.by||'', note:b.note||'' }));
+  return cal.concat(own).sort((a,b) => (a.from||'99').localeCompare(b.from||'99'));
+}
+const AUD_OPEN = '08:00', AUD_CLOSE = '15:00';
+function toMin(t){ if (!t) return null; const [h,m] = t.split(':').map(Number); return h*60 + (m||0); }
+function audOverlaps(a, b){
+  const a1 = toMin(a.from), b1 = toMin(b.from);
+  if (a1 == null || b1 == null) return false;
+  const a2 = toMin(a.to) ?? a1 + 60, b2 = toMin(b.to) ?? b1 + 60;   // no end time = 1 hour
+  return a1 < b2 && b1 < a2;
+}
+function stepAudWeek(delta){
+  state.focusDate = clampISO(addDays(startOfWeek(state.focusDate || todayISOClamped()), delta*7));
+  renderAudView();
+}
+function renderAudView(){
+  const start = startOfWeek(clampISO(state.focusDate || todayISOClamped()));
+  const end = addDays(start, 6);
+  const s = new Date(start+'T00:00:00'), e = new Date(end+'T00:00:00');
+  const wkN = academicWeek(start);
+  document.getElementById('audTitle').textContent = s.toLocaleDateString(undefined,{month:'short', day:'numeric'}) + ' \u2013 ' + e.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'}) + (wkN === 'break' ? ' \u00b7 Break' : (wkN ? ' \u00b7 Week ' + wkN : ''));
+  const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const grid = document.getElementById('audGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 7; i++){
+    if (WEEKEND_IDX.has(i)) continue;
+    const iso = addDays(start, i);
+    const d = new Date(iso+'T00:00:00');
+    const items = audItemsFor(iso);
+    const clashIds = new Set();
+    for (let a = 0; a < items.length; a++) for (let b = a+1; b < items.length; b++) if (audOverlaps(items[a], items[b])){ clashIds.add(items[a].kind+items[a].id); clashIds.add(items[b].kind+items[b].id); }
+    const box = document.createElement('div');
+    box.className = 'aud-day';
+    box.style.setProperty('--day', WEEKDAY_TINTS[i]);
+    box.innerHTML = `<div class="ah"><b>${DAY_NAMES[i]}</b><span>${d.getDate()} ${d.toLocaleDateString(undefined,{month:'short'})}</span></div>` +
+      (items.length ? items.map(it => `<div class="aud-item ${it.kind==='cal'?'cal':''}" onclick="${it.kind==='cal' ? `openDayModal('${iso}')` : `openAudForm('${it.id}')`}" title="${it.kind==='cal' ? 'From the main calendar \u2014 click to view or edit' : 'Auditorium only \u2014 click to edit'}">
+          <div>${it.from ? `<span class="tm">${escapeHtml(it.from)}${it.to ? '\u2013' + escapeHtml(it.to) : ''}</span>` : '<span class="tm" style="color:var(--ink-soft)">Time not set</span>'}<span class="aud-tag ${it.kind==='cal'?'cal':'only'}">${it.kind==='cal' ? 'Calendar' : 'Auditorium only'}</span>${clashIds.has(it.kind+it.id) ? '<span class="aud-tag clash">Time clash</span>' : ''}</div>
+          <div class="tt">${it.kind==='cal' ? iconHtml(it.ev) : ''}${escapeHtml(it.what)}</div>
+          ${it.by ? `<div class="sub">&#128100; ${escapeHtml(it.by)}</div>` : ''}${it.note ? `<div class="sub">${escapeHtml(it.note.length > 160 ? it.note.slice(0,160) + '\u2026' : it.note)}</div>` : ''}
+        </div>`).join('') : '<div class="aud-empty">Free all day</div>') +
+      `<button type="button" class="aud-add" onclick="openAudForm('', '${iso}')">+ Book</button>`;
+    grid.appendChild(box);
+  }
+}
+function openAudForm(id, iso){
+  requireUnlock(() => {
+    const b = id ? (state.aud || []).find(x => x.id === id) : null;
+    document.getElementById('audEditId').value = b ? b.id : '';
+    document.getElementById('audDate').value = b ? b.date : (iso || clampISO(state.focusDate || todayISOClamped()));
+    document.getElementById('audFrom').value = b ? (b.from||'') : '';
+    document.getElementById('audTo').value = b ? (b.to||'') : '';
+    document.getElementById('audWhat').value = b ? (b.what||'') : '';
+    document.getElementById('audBy').value = b ? (b.by||'') : '';
+    document.getElementById('audNote').value = b ? (b.note||'') : '';
+    document.getElementById('audFormTitle').innerHTML = b ? '&#127917; Edit auditorium booking' : '&#127917; Book the auditorium';
+    document.getElementById('audDelBtn').style.display = b ? '' : 'none';
+    document.getElementById('audClash').style.display = 'none';
+    document.getElementById('audOverlay').classList.add('show');
+    document.getElementById('audWhat').focus();
+  });
+}
+function closeAudForm(){ document.getElementById('audOverlay').classList.remove('show'); }
+async function submitAudForm(ev){
+  ev.preventDefault();
+  const id = document.getElementById('audEditId').value;
+  const data = {
+    date: document.getElementById('audDate').value,
+    from: document.getElementById('audFrom').value,
+    to: document.getElementById('audTo').value,
+    what: document.getElementById('audWhat').value.trim(),
+    by: document.getElementById('audBy').value.trim(),
+    note: document.getElementById('audNote').value.trim(),
+  };
+  if (!data.date || !data.from || !data.to || !data.what) return;
+  const bad = msg => { const c = document.getElementById('audClash'); c.textContent = msg; c.style.display = ''; };
+  if (data.from < AUD_OPEN || data.to > AUD_CLOSE) return bad('The auditorium is open from 8:00 to 3:00 (15:00). Please choose times in that range.');
+  if (data.to <= data.from) return bad('"To" must be after "From".');
+  const clashes = audItemsFor(data.date).filter(it => !(it.kind === 'only' && it.id === id) && audOverlaps(it, data));
+  if (clashes.length && !confirm('Time clash in the auditorium with:\n\n' + clashes.map(c => (c.from||'') + (c.to ? '\u2013'+c.to : '') + '  ' + c.what).join('\n') + '\n\nSave anyway?')) return;
+  if (!state.dbApi){ toast('Bookings need the shared calendar connection.'); return; }
+  try{
+    if (id) await state.dbApi.doc('auditorium/'+id).update(data);
+    else await state.dbApi.collection('auditorium').add(data);
+    toast(id ? 'Booking updated.' : 'Auditorium booked.');
+    state.focusDate = data.date;
+    closeAudForm();
+    if (state.view !== 'aud') setView('aud'); else renderAudView();
+  }catch(e){ console.error(e); toast('Could not save the booking.'); }
+}
+function deleteAudBooking(){
+  const id = document.getElementById('audEditId').value;
+  if (!id || !confirm('Delete this auditorium booking?')) return;
+  requireUnlock(async () => {
+    try{ await state.dbApi.doc('auditorium/'+id).delete(); toast('Booking deleted.'); closeAudForm(); }
+    catch(e){ toast('Could not delete the booking.'); }
+  });
+}
+
 /* ---------------- event icons (logos) ---------------- */
 /* Stored in the 'icons' collection as small PNG images (max 96px). Everyone sees them; editors add/remove. */
 function subscribeIcons(){
@@ -2483,7 +2683,7 @@ function escapeHtml(s){
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 document.addEventListener('keydown', (e)=>{
-  if (e.key === 'Escape'){ closeDayModal(); closeImportModal(); closeUnlockModal(); closeGuide(); }
+  if (e.key === 'Escape'){ closeDayModal(); closeImportModal(); closeUnlockModal(); closeGuide(); closeAudForm(); }
 });
 
 /* ---------------- init ---------------- */
