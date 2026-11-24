@@ -523,6 +523,10 @@
   }
   .field textarea{ resize:vertical; min-height:56px; }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .time-mode{ margin-bottom:8px; }
+  .time-mode button{ padding:6px 12px; }
+  .time-row{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-soft); font-weight:600; }
+  .time-row input{ flex:1; min-width:0; }
   .cat-select{ display:flex; flex-wrap:wrap; gap:6px; }
   .cat-opt{ display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--line); border-radius:999px; padding:5px 11px; cursor:pointer; font-size:12px; font-weight:600; }
   .cat-opt input{ display:none; }
@@ -774,15 +778,23 @@
             </span>
           </label>
         </div>
-        <div class="row2">
-          <div class="field">
-            <label for="evTime">Time <span style="text-transform:none;font-weight:500;">(optional)</span></label>
-            <input type="time" id="evTime">
+        <div class="field">
+          <label>Time <span style="text-transform:none;font-weight:500;">(optional)</span></label>
+          <span class="aud-seg time-mode"><button type="button" id="tmClock" class="active" onclick="setTimeMode('clock')">&#128339; From &ndash; To</button><button type="button" id="tmLesson" onclick="setTimeMode('lesson')">&#128216; During a lesson</button></span>
+          <div class="time-row" id="tmClockRow">
+            <input type="time" id="evTime" aria-label="From">
+            <span>to</span>
+            <input type="time" id="evTimeTo" aria-label="To">
           </div>
-          <div class="field">
-            <label for="evNote">Note <span style="text-transform:none;font-weight:500;">(optional)</span></label>
-            <textarea id="evNote" maxlength="2000" placeholder="Short detail" rows="4" style="resize:vertical;"></textarea>
+          <div class="time-row" id="tmLessonRow" style="display:none">
+            <span>During</span>
+            <input type="text" id="evDuring" maxlength="60" placeholder="Subject, e.g. Math">
+            <span>lesson</span>
           </div>
+        </div>
+        <div class="field">
+          <label for="evNote">Note <span style="text-transform:none;font-weight:500;">(optional)</span></label>
+          <textarea id="evNote" maxlength="2000" placeholder="Short detail" rows="3" style="resize:vertical;"></textarea>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-ghost" id="cancelEditBtn" style="display:none" onclick="resetForm()">Cancel edit</button>
@@ -1439,7 +1451,7 @@ async function notifyChange(action, data){
         action: action,
         event_title: data.title || '',
         event_date: data.date || '',
-        event_time: data.time || '',
+        event_time: timeText(data),
         event_category: catLabel,
         event_note: data.note || '',
         calendar_link: CALENDAR_LINK,
@@ -1601,6 +1613,26 @@ function toggleCelebrate(id){
     const ok = await storeUpdate(id, { category:'intl', celebrate: on });
     if (ok){ toast(on ? '\ud83c\udf89 We celebrate "' + e.title + '" \u2014 it now shows like a normal event and prints.' : 'Back to a normal International Day.'); if (document.getElementById('dayOverlay').classList.contains('show')) renderDayList(); }
   });
+}
+/* Event time text: "09:00", "09:00–10:30" or "During Math lesson". */
+function timeText(e){
+  if (!e) return '';
+  if (e.during){ const d = String(e.during).trim(); return 'During ' + d + (/lesson|period|class|حصة/i.test(d) ? '' : ' lesson'); }
+  if (!e.time) return '';
+  return e.time + (e.timeTo ? '\u2013' + e.timeTo : '');
+}
+function setTimeMode(m){
+  document.getElementById('tmClock').classList.toggle('active', m === 'clock');
+  document.getElementById('tmLesson').classList.toggle('active', m === 'lesson');
+  document.getElementById('tmClockRow').style.display = m === 'clock' ? '' : 'none';
+  document.getElementById('tmLessonRow').style.display = m === 'lesson' ? '' : 'none';
+  if (m === 'lesson') setTimeout(() => document.getElementById('evDuring').focus(), 30);
+}
+function fillTimeInputs(e){
+  document.getElementById('evTime').value = (e && e.time) || '';
+  document.getElementById('evTimeTo').value = (e && e.timeTo) || '';
+  document.getElementById('evDuring').value = (e && e.during) || '';
+  setTimeMode(e && e.during ? 'lesson' : 'clock');
 }
 function eventsByDate(){
   const map = {};
@@ -1791,12 +1823,12 @@ function renderDayView(){
   const wkN = academicWeek(startOfWeek(iso));
   document.getElementById('dayTitle').textContent = d.toLocaleDateString(undefined,{weekday:'short', day:'numeric', month:'short', year:'numeric'});
   const evs = (eventsByDate()[iso] || []).filter(e => !isPlainIntl(e)); // International Days show here only when we celebrate them
-  const rank = e => (isPlainIntl(e) ? 2 : (e.time ? 0 : 1));
+  const rank = e => (isPlainIntl(e) ? 2 : (e.time || e.during ? 0 : 1));
   const list = evs.slice().sort((a,b) => rank(a) - rank(b) || (a.time||'').localeCompare(b.time||''));
   const cards = list.map(e => {
     const cat = CATEGORIES[e.category] ? CATEGORIES[e.category].label : 'Event';
     const intl = isPlainIntl(e);
-    const meta = intl ? '' : `<div class="m">${e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${placeHtml(e)}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
+    const meta = intl ? '' : `<div class="m">${timeText(e) ? `<span class="tm">${escapeHtml(timeText(e))}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${placeHtml(e)}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
     const note = (!intl && e.note) ? `<div class="n">${escapeHtml(e.note)}</div>` : '';
     return `<div class="wev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" onclick="openDayModal('${iso}')" title="Click to view or edit">
       <div class="t">${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}${e.category==='intl' ? `<button type="button" class="cel-btn" onclick="event.stopPropagation(); toggleCelebrate('${e.id}')">${isCelebrated(e) ? '&#127881; We celebrate it &#10003;' : '&#127881; Celebrate'}</button>` : ''}</div>${meta}${note}${contactCardHtml(e)}
@@ -1814,22 +1846,22 @@ function renderDayView(){
 }
 /* Month view event cards (compact): time first, International Days last and lighter. */
 function monthEventsHtml(evs){
-  const rank = e => (isPlainIntl(e) ? 2 : (e.time ? 0 : 1));
+  const rank = e => (isPlainIntl(e) ? 2 : (e.time || e.during ? 0 : 1));
   const list = evs.slice().sort((a,b) => rank(a) - rank(b) || (a.time||'').localeCompare(b.time||''));
   return list.map(e => {
     const intl = isPlainIntl(e);
     const tip = escapeHtml(e.title) + (e.place && PLACE_CATS.has(e.category) ? ' \u2014 ' + escapeHtml(e.place) : '') + (isPrep(e) ? ' (under preparation)' : '');
-    return `<div class="mev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" title="${tip}"><div class="t">${!intl && e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${placeHtml(e)}</div>`;
+    return `<div class="mev${intl?' intl':''}${isPrep(e)?' prep':''}" style="--c:${catColor(e.category)}" title="${tip}"><div class="t">${!intl && timeText(e) ? `<span class="tm">${escapeHtml(timeText(e))}</span>` : ''}${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${isPrep(e)?'&#9203; ':''}${escapeHtml(e.title)}</div>${placeHtml(e)}</div>`;
   }).join('');
 }
 /* Week view event cards: time first, International Days last and lighter. */
 function weekEventsHtml(evs){
-  const rank = e => (isPlainIntl(e) ? 2 : (e.time ? 0 : 1));
+  const rank = e => (isPlainIntl(e) ? 2 : (e.time || e.during ? 0 : 1));
   const list = evs.slice().sort((a,b) => rank(a) - rank(b) || (a.time||'').localeCompare(b.time||''));
   return list.map(e => {
     const cat = CATEGORIES[e.category] ? CATEGORIES[e.category].label : 'Event';
     const intl = isPlainIntl(e);
-    const meta = intl ? '' : `<div class="m">${e.time ? `<span class="tm">${escapeHtml(e.time)}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${placeHtml(e)}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
+    const meta = intl ? '' : `<div class="m">${timeText(e) ? `<span class="tm">${escapeHtml(timeText(e))}</span>` : ''}<span class="cat">${escapeHtml(cat)}</span>${placeHtml(e)}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>`;
     const noteTxt = (!intl && e.note) ? String(e.note).trim() : '';
     const long = noteTxt.split('\n').length > 3 || noteTxt.length > 140;
     const note = noteTxt ? `<div class="n">${escapeHtml(noteTxt)}</div>${long ? `<div class="more" onclick="event.stopPropagation(); openDayView('${e.date}')">Read more &rarr;</div>` : ''}` : '';
@@ -1954,7 +1986,7 @@ function renderCatList(key){
     const isNext = !hasToday && i === nextIdx;
     const label = d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
     const rowClass = 'ev-row' + (isToday?' is-today':'') + (isNext?' is-next':'');
-    const timePart = e.time ? (' &middot; '+escapeHtml(e.time)) : '';
+    const timePart = timeText(e) ? (' &middot; '+escapeHtml(timeText(e))) : '';
     const notePart = e.note ? ('<div class="n">'+escapeHtml(e.note)+'</div>') : '';
     html += '<div class="'+rowClass+'" onclick="closeCatListModal(); openDayModal(&quot;'+e.date+'&quot;);">' +
       '<span class="swatch" style="background:'+catColor(e.category)+'"></span>' +
@@ -2139,7 +2171,7 @@ function renderDayList(){
     <div class="ev-row" data-id="${e.id}">
       <span class="swatch" style="background:${catColor(e.category)}"></span>
       <div class="info">
-        <div class="t">${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${escapeHtml(e.title)}${e.time ? ' &middot; '+escapeHtml(e.time) : ''}${e.place && PLACE_CATS.has(e.category) ? ' &middot; ' + placeHtml(e) : ''}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>
+        <div class="t">${iconHtml(e)}${isCelebrated(e)?'&#127881; ':''}${escapeHtml(e.title)}${timeText(e) ? ' &middot; '+escapeHtml(timeText(e)) : ''}${e.place && PLACE_CATS.has(e.category) ? ' &middot; ' + placeHtml(e) : ''}${isPrep(e) ? '<span class="prep-tag">Under prep</span>' : ''}</div>
         ${e.note ? `<div class="n">${escapeHtml(e.note)}</div>` : ''}
         ${supCardHtml(e)}
         ${contactCardHtml(e)}
@@ -2157,7 +2189,7 @@ function editEvent(id){
   if (!e) return;
   document.getElementById('editingId').value = id;
   document.getElementById('evTitle').value = e.title || '';
-  document.getElementById('evTime').value = e.time || '';
+  fillTimeInputs(e);
   document.getElementById('evNote').value = e.note || '';
   renderCatSelect(e.category || 'event');
   fillContactInputs(e);
@@ -2174,7 +2206,7 @@ function editEvent(id){
 function resetForm(){
   document.getElementById('editingId').value = '';
   document.getElementById('evTitle').value = '';
-  document.getElementById('evTime').value = '';
+  fillTimeInputs(null);
   document.getElementById('evNote').value = '';
   renderCatSelect('event');
   fillContactInputs(null);
@@ -2224,7 +2256,7 @@ function renderAudRooms(){
 }
 function audItemsFor(iso){
   const cal = visibleEvents().filter(e => e.date === iso && e.place === audRoom() && PLACE_CATS.has(e.category))
-    .map(e => ({ kind:'cal', id:e.id, date:iso, from:e.time||'', to:'', what:e.title, by:'', note:e.note||'', ev:e }));
+    .map(e => ({ kind:'cal', id:e.id, date:iso, from:e.time||'', to:e.timeTo||'', what:(e.during ? timeText(e) + ': ' : '') + e.title, by:'', note:e.note||'', ev:e }));
   const own = (state.aud || []).filter(b => b.date === iso && (b.room || 'Auditorium') === audRoom()).map(b => ({ kind:'only', id:b.id, date:iso, from:b.from||'', to:b.to||'', what:b.what||'', by:b.by||'', note:b.note||'', bookedBy:b.bookedBy||'' }));
   return cal.concat(own).sort((a,b) => (a.from||'99').localeCompare(b.from||'99'));
 }
@@ -2697,7 +2729,7 @@ function announceEvent(id){
     const e = state.events.find(x => x.id === id);
     if (!e) return;
     if (!confirm('Announce "' + e.title + '"?\n\nEveryone will see it on the calendar and the notify list will get an email.')) return;
-    const data = { date:e.date, title:e.title, category:e.category || 'event', time:e.time || '', note:e.note || '', prep:false };
+    const data = { date:e.date, title:e.title, category:e.category || 'event', time:e.time || '', timeTo:e.timeTo || '', during:e.during || '', note:e.note || '', prep:false };
     const ok = await storeUpdate(id, data, 'added');
     if (ok){ toast('Announced — everyone can see it and the notify list was emailed.'); resetForm(); renderDayList(); }
   });
@@ -2709,14 +2741,18 @@ async function submitEventForm(ev){
   const title = document.getElementById('evTitle').value.trim();
   const catInput = document.querySelector('#catSelect input[name="evCat"]:checked');
   const category = catInput ? catInput.value : 'event';
-  const time = document.getElementById('evTime').value;
+  const lessonMode = document.getElementById('tmLesson').classList.contains('active');
+  const during = lessonMode ? document.getElementById('evDuring').value.trim() : '';
+  const time = during ? '' : document.getElementById('evTime').value;
+  const timeTo = (during || !time) ? '' : document.getElementById('evTimeTo').value;
   const note = document.getElementById('evNote').value.trim();
   if (!date || !title) return;
+  if (time && timeTo && timeTo <= time){ toast('The "to" time must be after the "from" time.'); return; }
   if (!inRange(date)){ toast('Date must be within Aug 2026 – Jul 2027.'); return; }
 
   const prep = document.getElementById('evPrep').checked;
   const editingId = document.getElementById('editingId').value;
-  const data = { date, title, category, time: time || '', note: note || '', prep, ...readContactInputs(category), supervisors: readSupInputs(category), iconId: document.getElementById('evIconId').value || '', place: readPlace(category) };
+  const data = { date, title, category, time: time || '', timeTo, during, note: note || '', prep, ...readContactInputs(category), supervisors: readSupInputs(category), iconId: document.getElementById('evIconId').value || '', place: readPlace(category) };
   const before = editingId ? state.events.find(x => x.id === editingId) : null;
   const announcing = !!(before && isPrep(before) && !prep);
   const onlySupervisors = !announcing && sameEventExceptSupervisors(before, data);
