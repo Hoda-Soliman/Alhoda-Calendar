@@ -180,6 +180,19 @@
   .chip.intl-toggle[aria-checked="true"] .sw{ background:var(--cat-intl); }
   .chip.intl-toggle[aria-checked="true"] .sw::after{ transform:translateX(13px); }
   @media print{ .chip.intl-toggle{ display:none; } }
+  /* International Days + Other World Days: on the right, one under the other, each with its own on/off switch */
+  .legend-side{ margin-left:auto; display:flex; flex-direction:column; gap:6px; align-items:stretch; }
+  .legend > .chip{ align-self:center; }
+  .side-row{ display:flex; align-items:center; gap:6px; justify-content:space-between; }
+  .side-row .chip{ flex:1; }
+  .side-sw{ border:1px solid var(--line); background:var(--paper-raised); border-radius:999px; padding:5px 8px; cursor:pointer; display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:700; color:var(--ink-soft); font-family:inherit; }
+  .side-sw .sw{ position:relative; width:30px; height:17px; border-radius:999px; background:var(--line); transition:background .15s ease; flex:none; }
+  .side-sw .sw::after{ content:''; position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.25); transition:transform .15s ease; }
+  .side-sw[aria-checked="true"] .sw{ background:var(--swc); }
+  .side-sw[aria-checked="true"] .sw::after{ transform:translateX(13px); }
+  .side-sw .lbl{ min-width:22px; text-align:left; }
+  @media (max-width:640px){ .legend-side{ margin-left:0; width:100%; } }
+  @media print{ .legend-side{ display:none; } }
   /* ---------- under preparation ---------- */
   .ev-chip.prep{ background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.30) 0 4px, transparent 4px 8px); outline:1.5px dashed rgba(0,0,0,.45); outline-offset:-1.5px; }
   .mini-dots span.prep{ opacity:.45; }
@@ -1226,6 +1239,15 @@ function toggleIntlDays(){
   renderAll();
   toast(show ? 'International Days are shown.' : 'International Days are hidden.');
 }
+// Show / hide Other World Days on their own (also remembered on each device).
+const OTHER_PREF_KEY = 'cal-hide-other';
+try{ if (localStorage.getItem(OTHER_PREF_KEY) === '1') state.hideOther = true; }catch(e){}
+function toggleOtherDays(){
+  state.hideOther = !state.hideOther;
+  try{ localStorage.setItem(OTHER_PREF_KEY, state.hideOther ? '1' : '0'); }catch(e){}
+  renderAll();
+  toast(state.hideOther ? 'Other World Days are hidden.' : 'Other World Days are shown.');
+}
 
 function pad2(n){ return String(n).padStart(2,'0'); }
 function ymd(y,m,d){ return `${y}-${pad2(m+1)}-${pad2(d)}`; }
@@ -1537,6 +1559,7 @@ function renderLegend(){
   const el = document.getElementById('legend');
   el.innerHTML = '';
   Object.entries(CATEGORIES).forEach(([key,cfg])=>{
+    if (key === 'intl') return;   // shown on the right with its own switch
     const btn = document.createElement('button');
     btn.className = 'chip on';
     btn.title = 'View all ' + cfg.label + ' events';
@@ -1544,23 +1567,6 @@ function renderLegend(){
     btn.onclick = () => openCatListModal(key);
     el.appendChild(btn);
   });
-  const intlOn = state.filter.has('intl');
-  const tg = document.createElement('button');
-  tg.className = 'chip on intl-toggle';
-  tg.setAttribute('role','switch');
-  tg.setAttribute('aria-checked', intlOn ? 'true' : 'false');
-  tg.title = intlOn ? 'Hide International Days from the calendar' : 'Show International Days on the calendar';
-  tg.innerHTML = `<span class="sw"></span>International Days: ${intlOn ? 'shown' : 'hidden'}`;
-  tg.onclick = toggleIntlDays;
-  if (state.events.some(isOtherDay)){
-    const ob = document.createElement('button');
-    ob.className = 'chip on';
-    ob.title = 'View all Other World Days (not UN days)';
-    ob.innerHTML = `<span class="dot" style="background:${getComputedStyle(document.documentElement).getPropertyValue('--cat-intl2').trim()}"></span>Other World Day`;
-    ob.onclick = () => openCatListModal(OTHER_KEY);
-    el.appendChild(ob);
-  }
-  el.appendChild(tg);
   const nPrep = state.events.filter(isPrep).length;
   if (nPrep){
     const btn = document.createElement('button');
@@ -1570,6 +1576,26 @@ function renderLegend(){
     btn.onclick = () => openCatListModal(PREP_KEY);
     el.appendChild(btn);
   }
+  // Right side: International Days, and under it Other World Days. Name = open the list; switch = on / off.
+  const side = document.createElement('div');
+  side.className = 'legend-side';
+  const coral = getComputedStyle(document.documentElement).getPropertyValue('--cat-intl2').trim();
+  const row = (label, color, listKey, on, toggle, what) => {
+    const r = document.createElement('div'); r.className = 'side-row';
+    const name = document.createElement('button'); name.className = 'chip on';
+    name.title = 'View all ' + what; name.innerHTML = `<span class="dot" style="background:${color}"></span>${label}`;
+    name.onclick = () => openCatListModal(listKey);
+    const sw = document.createElement('button'); sw.className = 'side-sw'; sw.type = 'button';
+    sw.setAttribute('role','switch'); sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    sw.style.setProperty('--swc', color);
+    sw.title = (on ? 'Hide ' : 'Show ') + what + (on ? ' from the calendar' : ' on the calendar');
+    sw.innerHTML = `<span class="sw"></span><span class="lbl">${on ? 'On' : 'Off'}</span>`;
+    sw.onclick = toggle;
+    r.appendChild(name); r.appendChild(sw); return r;
+  };
+  side.appendChild(row('International Day', catColor('intl'), 'intl', state.filter.has('intl'), toggleIntlDays, 'International Days (UN)'));
+  side.appendChild(row('Other World Day', coral, OTHER_KEY, !state.hideOther, toggleOtherDays, 'Other World Days'));
+  el.appendChild(side);
 }
 
 /* ---------------- view switching ---------------- */
@@ -1626,7 +1652,11 @@ function goToday(){
 function isCelebrated(e){ return !!(e && e.category === 'intl' && e.celebrate); }
 function isPlainIntl(e){ return !!(e && e.category === 'intl' && !e.celebrate); }
 function filteredEvents(){
-  return visibleEvents().filter(e => state.filter.has(e.category || 'event') || isCelebrated(e));
+  return visibleEvents().filter(e => {
+    if (isCelebrated(e)) return true;                       // celebrated days always show
+    if (isOtherDay(e)) return !state.hideOther;             // Other World Days: their own switch
+    return state.filter.has(e.category || 'event');         // UN International Days: the International switch
+  });
 }
 function toggleCelebrate(id){
   requireUnlock(async () => {
@@ -1986,7 +2016,7 @@ function renderCatList(key){
   const toVal = document.getElementById('catTo').value;
   document.getElementById('catRangeLabel').textContent = catListRangeText();
   let list = visibleEvents()
-    .filter(e => key === PREP_KEY ? isPrep(e) : key === OTHER_KEY ? isOtherDay(e) : (e.category || 'event') === key)
+    .filter(e => key === PREP_KEY ? isPrep(e) : key === OTHER_KEY ? isOtherDay(e) : ((e.category || 'event') === key && !isOtherDay(e)))
     .slice()
     .sort((a,b) => (a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
   if (fromVal) list = list.filter(e => e.date >= fromVal);
