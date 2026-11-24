@@ -305,6 +305,22 @@
   .aud-tag.only{ background:color-mix(in srgb, var(--accent) 12%, transparent); color:var(--accent); }
   .aud-tag.clash{ background:#fde2e2; color:#b3261e; }
   .aud-empty{ font-size:12px; color:var(--ink-soft); }
+  /* auditorium month view */
+  .aud-grid.month{ grid-template-columns:repeat(5,minmax(0,1fr)); gap:6px; padding:10px; }
+  .aud-mhead{ text-align:center; font-size:12.5px; font-weight:800; color:color-mix(in srgb, var(--day) 65%, var(--ink)); border-bottom:2px solid color-mix(in srgb, var(--day) 55%, transparent); padding-bottom:4px; }
+  .aud-mcell{ border:1px solid var(--line); background:var(--paper-raised); border-radius:9px; padding:5px; min-height:92px; cursor:pointer; display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .aud-mcell:hover{ border-color:var(--accent); }
+  .aud-mcell.out{ opacity:.35; }
+  .aud-mcell.today{ box-shadow:inset 0 0 0 2px var(--accent); }
+  .aud-mcell .dn{ font-size:12px; font-weight:800; color:var(--ink); }
+  .aud-mi{ border-left:3px solid var(--c, #7a1418); background:color-mix(in srgb, var(--c, #7a1418) 10%, var(--paper-raised)); border-radius:4px; padding:1px 4px; font-size:10.5px; line-height:1.25; color:var(--ink); overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  .aud-mi.cal{ --c: var(--cat-event); }
+  .aud-mi.clash{ background:#fde2e2; }
+  .aud-mi b{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:9.5px; }
+  .aud-seg{ display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; }
+  .aud-seg button{ border:none; background:var(--paper-raised); padding:4px 12px; font-size:12px; font-weight:700; cursor:pointer; color:var(--ink-soft); font-family:inherit; }
+  .aud-seg button.active{ background:var(--accent); color:#fff; }
+  @media (max-width:600px){ .aud-grid.month{ grid-template-columns:repeat(5,minmax(0,1fr)); padding:4px; gap:3px; } .aud-mi{ font-size:8.5px; } .aud-mcell{ min-height:70px; } }
   .aud-add{ margin-top:auto; align-self:flex-start; font-size:11.5px; font-weight:700; color:var(--accent); background:none; border:1px dashed var(--accent); border-radius:999px; padding:2px 10px; cursor:pointer; font-family:inherit; }
   .aud-bar{ display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; font-size:12.5px; color:var(--ink-soft); }
   @media print{ .aud-add, .aud-bar .btn{ display:none !important; } .aud-day, .aud-item{ -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
@@ -635,9 +651,9 @@
   <section id="audView" class="hidden">
     <div class="month-nav">
       <div class="left">
-        <button class="icon-btn" onclick="stepAudWeek(-1)" aria-label="Previous week">&larr;</button>
+        <button class="icon-btn" onclick="stepAudWeek(-1)" aria-label="Previous">&larr;</button>
         <h2 id="audTitle"></h2>
-        <button class="icon-btn" onclick="stepAudWeek(1)" aria-label="Next week">&rarr;</button>
+        <button class="icon-btn" onclick="stepAudWeek(1)" aria-label="Next">&rarr;</button>
       </div>
       <div class="left">
         <button class="btn btn-sm" onclick="goToday()">Today</button>
@@ -645,7 +661,7 @@
     </div>
     <div class="aud-bar">
       <span>&#127917; Auditorium (open 8:00&ndash;3:00) &mdash; calendar events with Place = Auditorium <span class="aud-tag cal">Calendar</span> plus bookings only for the auditorium <span class="aud-tag only">Auditorium only</span>. Many items per day are fine; <span class="aud-tag clash">Time clash</span> means two times overlap.</span>
-      <button class="btn btn-sm btn-primary" onclick="openAudForm()">+ Book the auditorium</button>
+      <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><span class="aud-seg"><button id="audModeWeek" class="active" onclick="setAudMode('week')">Week</button><button id="audModeMonth" onclick="setAudMode('month')">Month</button></span><span id="audWho"></span><button class="btn btn-sm btn-primary" onclick="openAudForm()">+ Book the auditorium</button></span>
     </div>
     <div class="aud-grid" id="audGrid"></div>
   </section>
@@ -792,6 +808,34 @@
   </div>
 </div>
 
+<!-- Auditorium sign-in (only these people can book) -->
+<div class="overlay" id="audLoginOverlay" onclick="if(event.target===this) closeAudLogin()">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-head">
+      <h3>&#127917; Auditorium bookings</h3>
+      <button class="close-x" onclick="closeAudLogin()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 14px;">Only the auditorium team can add, edit or delete bookings. Choose your name and type your password.</p>
+      <form onsubmit="submitAudLogin(event)">
+        <div class="field">
+          <label for="audUserSel">Your name</label>
+          <select id="audUserSel"></select>
+        </div>
+        <div class="field">
+          <label for="audPinInput">Password</label>
+          <input type="password" id="audPinInput" autocomplete="off" autocapitalize="off">
+        </div>
+        <div id="audPinError" style="display:none;color:var(--cat-holiday);font-size:12.5px;margin-bottom:10px;">That's not it &mdash; try again.</div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeAudLogin()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Sign in</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- Auditorium booking modal -->
 <div class="overlay" id="audOverlay" onclick="if(event.target===this) closeAudForm()">
   <div class="modal">
@@ -800,7 +844,7 @@
       <button class="close-x" onclick="closeAudForm()" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;">Only for the auditorium: it does <b>not</b> appear on the main calendar and sends <b>no email</b>. The auditorium is open <b>8:00 &ndash; 3:00</b>. You can book many items on the same day &mdash; it is a clash only when two times overlap.</p>
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;">Only the auditorium team (Hoda, Menna, Sarah Elgendy, Abeer Nader) can book. Only for the auditorium: it does <b>not</b> appear on the main calendar and sends <b>no email</b>. The auditorium is open <b>8:00 &ndash; 3:00</b>. You can book many items on the same day &mdash; it is a clash only when two times overlap.</p>
       <form id="audForm" onsubmit="submitAudForm(event)">
         <input type="hidden" id="audEditId" value="">
         <div class="field">
@@ -2142,10 +2186,56 @@ function subscribeAud(){
 function audItemsFor(iso){
   const cal = visibleEvents().filter(e => e.date === iso && e.place === 'Auditorium' && PLACE_CATS.has(e.category))
     .map(e => ({ kind:'cal', id:e.id, date:iso, from:e.time||'', to:'', what:e.title, by:'', note:e.note||'', ev:e }));
-  const own = (state.aud || []).filter(b => b.date === iso).map(b => ({ kind:'only', id:b.id, date:iso, from:b.from||'', to:b.to||'', what:b.what||'', by:b.by||'', note:b.note||'' }));
+  const own = (state.aud || []).filter(b => b.date === iso).map(b => ({ kind:'only', id:b.id, date:iso, from:b.from||'', to:b.to||'', what:b.what||'', by:b.by||'', note:b.note||'', bookedBy:b.bookedBy||'' }));
   return cal.concat(own).sort((a,b) => (a.from||'99').localeCompare(b.from||'99'));
 }
 const AUD_OPEN = '08:00', AUD_CLOSE = '15:00';
+/* Only these people can add, edit or delete auditorium bookings (passwords are stored as SHA-256 hashes). */
+const AUD_USERS = [
+  { name:'Hoda Soliman',  hash:'2617279dc9303c351fb90bdf6067cfc63e8b276386ce6dfaeabb171ed2fb4280', alt:'71b476ee9e18dbe7d44792ea1cccfde88ddc3b38c6deb966e96992056b094ed5' },
+  { name:'Menna',         hash:'71b476ee9e18dbe7d44792ea1cccfde88ddc3b38c6deb966e96992056b094ed5' },
+  { name:'Sarah Elgendy', hash:'71b476ee9e18dbe7d44792ea1cccfde88ddc3b38c6deb966e96992056b094ed5' },
+  { name:'Abeer Nader',   hash:'71b476ee9e18dbe7d44792ea1cccfde88ddc3b38c6deb966e96992056b094ed5' },
+];
+let pendingAudAction = null;
+function audUser(){ try{ return sessionStorage.getItem('aud-user') || state._audUser || ''; }catch(e){ return state._audUser || ''; } }
+async function sha256Hex(txt){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function requireAudUnlock(action){
+  if (audUser()){ action(); return; }
+  pendingAudAction = action;
+  document.getElementById('audUserSel').innerHTML = AUD_USERS.map(u => `<option>${escapeHtml(u.name)}</option>`).join('');
+  document.getElementById('audPinInput').value = '';
+  document.getElementById('audPinError').style.display = 'none';
+  document.getElementById('audLoginOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('audPinInput').focus(), 50);
+}
+async function submitAudLogin(ev){
+  ev.preventDefault();
+  const name = document.getElementById('audUserSel').value;
+  const u = AUD_USERS.find(x => x.name === name);
+  const h = await sha256Hex(document.getElementById('audPinInput').value);
+  if (u && (h === u.hash || (u.alt && h === u.alt))){
+    state._audUser = name;
+    try{ sessionStorage.setItem('aud-user', name); }catch(e){}
+    document.getElementById('audLoginOverlay').classList.remove('show');
+    renderAudWho();
+    const a = pendingAudAction; pendingAudAction = null;
+    if (a) a();
+  } else {
+    document.getElementById('audPinError').style.display = 'block';
+  }
+}
+function closeAudLogin(){ document.getElementById('audLoginOverlay').classList.remove('show'); pendingAudAction = null; }
+function audSignOut(){ state._audUser = ''; try{ sessionStorage.removeItem('aud-user'); }catch(e){} renderAudWho(); toast('Signed out of auditorium bookings.'); }
+function renderAudWho(){
+  const el = document.getElementById('audWho');
+  if (!el) return;
+  const n = audUser();
+  el.innerHTML = n ? `Booking as <b>${escapeHtml(n)}</b> &middot; <a href="#" onclick="audSignOut(); return false;">sign out</a>` : '';
+}
 function toMin(t){ if (!t) return null; const [h,m] = t.split(':').map(Number); return h*60 + (m||0); }
 function audOverlaps(a, b){
   const a1 = toMin(a.from), b1 = toMin(b.from);
@@ -2154,16 +2244,64 @@ function audOverlaps(a, b){
   return a1 < b2 && b1 < a2;
 }
 function stepAudWeek(delta){
-  state.focusDate = clampISO(addDays(startOfWeek(state.focusDate || todayISOClamped()), delta*7));
+  if (state.audMode === 'month'){
+    const d = new Date(clampISO(state.focusDate || todayISOClamped()) + 'T00:00:00');
+    const m = new Date(d.getFullYear(), d.getMonth() + delta, 1);
+    state.focusDate = clampISO(ymd(m.getFullYear(), m.getMonth(), 1));
+  } else {
+    state.focusDate = clampISO(addDays(startOfWeek(state.focusDate || todayISOClamped()), delta*7));
+  }
   renderAudView();
 }
+function setAudMode(m){
+  state.audMode = m;
+  document.getElementById('audModeWeek').classList.toggle('active', m !== 'month');
+  document.getElementById('audModeMonth').classList.toggle('active', m === 'month');
+  renderAudView();
+}
+function audClashSet(items){
+  const set = new Set();
+  for (let a = 0; a < items.length; a++) for (let b = a+1; b < items.length; b++) if (audOverlaps(items[a], items[b])){ set.add(items[a].kind+items[a].id); set.add(items[b].kind+items[b].id); }
+  return set;
+}
+function renderAudMonth(){
+  const iso0 = clampISO(state.focusDate || todayISOClamped());
+  const d0 = new Date(iso0 + 'T00:00:00');
+  const y = d0.getFullYear(), mo = d0.getMonth();
+  document.getElementById('audTitle').textContent = d0.toLocaleDateString(undefined, {month:'long', year:'numeric'});
+  renderAudWho();
+  const grid = document.getElementById('audGrid');
+  grid.className = 'aud-grid month';
+  const DN = ['Sun','Mon','Tue','Wed','Thu'];
+  let html = DN.map((n,i) => `<div class="aud-mhead" style="--day:${WEEKDAY_TINTS[i]}">${n}</div>`).join('');
+  const first = ymd(y, mo, 1);
+  const lastDate = new Date(y, mo + 1, 0).getDate();
+  const today = todayISO();
+  for (let wk = startOfWeek(first); wk <= ymd(y, mo, lastDate); wk = addDays(wk, 7)){
+    for (let i = 0; i < 5; i++){
+      const iso = addDays(wk, i);
+      const dd = new Date(iso + 'T00:00:00');
+      const out = dd.getMonth() !== mo;
+      const items = out ? [] : audItemsFor(iso);
+      const clash = audClashSet(items);
+      html += `<div class="aud-mcell${out ? ' out' : ''}${iso === today ? ' today' : ''}" onclick="state.focusDate='${iso}'; setAudMode('week')" title="Open this week">
+        <div class="dn">${dd.getDate()}</div>
+        ${items.map(it => `<div class="aud-mi ${it.kind === 'cal' ? 'cal' : ''}${clash.has(it.kind+it.id) ? ' clash' : ''}" title="${escapeHtml((it.from ? it.from + (it.to ? '\u2013' + it.to : '') + ' ' : '') + it.what)}">${it.from ? `<b>${escapeHtml(it.from)}</b> ` : ''}${escapeHtml(it.what)}</div>`).join('')}
+      </div>`;
+    }
+  }
+  grid.innerHTML = html;
+}
 function renderAudView(){
+  if (state.audMode === 'month') return renderAudMonth();
+  document.getElementById('audGrid').className = 'aud-grid';
   const start = startOfWeek(clampISO(state.focusDate || todayISOClamped()));
   const end = addDays(start, 6);
   const s = new Date(start+'T00:00:00'), e = new Date(end+'T00:00:00');
   const wkN = academicWeek(start);
   document.getElementById('audTitle').textContent = s.toLocaleDateString(undefined,{month:'short', day:'numeric'}) + ' \u2013 ' + e.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'}) + (wkN === 'break' ? ' \u00b7 Break' : (wkN ? ' \u00b7 Week ' + wkN : ''));
   const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  renderAudWho();
   const grid = document.getElementById('audGrid');
   grid.innerHTML = '';
   for (let i = 0; i < 7; i++){
@@ -2180,14 +2318,14 @@ function renderAudView(){
       (items.length ? items.map(it => `<div class="aud-item ${it.kind==='cal'?'cal':''}" onclick="${it.kind==='cal' ? `openDayModal('${iso}')` : `openAudForm('${it.id}')`}" title="${it.kind==='cal' ? 'From the main calendar \u2014 click to view or edit' : 'Auditorium only \u2014 click to edit'}">
           <div>${it.from ? `<span class="tm">${escapeHtml(it.from)}${it.to ? '\u2013' + escapeHtml(it.to) : ''}</span>` : '<span class="tm" style="color:var(--ink-soft)">Time not set</span>'}<span class="aud-tag ${it.kind==='cal'?'cal':'only'}">${it.kind==='cal' ? 'Calendar' : 'Auditorium only'}</span>${clashIds.has(it.kind+it.id) ? '<span class="aud-tag clash">Time clash</span>' : ''}</div>
           <div class="tt">${it.kind==='cal' ? iconHtml(it.ev) : ''}${escapeHtml(it.what)}</div>
-          ${it.by ? `<div class="sub">&#128100; ${escapeHtml(it.by)}</div>` : ''}${it.note ? `<div class="sub">${escapeHtml(it.note.length > 160 ? it.note.slice(0,160) + '\u2026' : it.note)}</div>` : ''}
+          ${it.by ? `<div class="sub">&#128100; ${escapeHtml(it.by)}</div>` : ''}${it.bookedBy ? `<div class="sub" style="font-size:10.5px">Booked by ${escapeHtml(it.bookedBy)}</div>` : ''}${it.note ? `<div class="sub">${escapeHtml(it.note.length > 160 ? it.note.slice(0,160) + '\u2026' : it.note)}</div>` : ''}
         </div>`).join('') : '<div class="aud-empty">Free all day</div>') +
       `<button type="button" class="aud-add" onclick="openAudForm('', '${iso}')">+ Book</button>`;
     grid.appendChild(box);
   }
 }
 function openAudForm(id, iso){
-  requireUnlock(() => {
+  requireAudUnlock(() => {
     const b = id ? (state.aud || []).find(x => x.id === id) : null;
     document.getElementById('audEditId').value = b ? b.id : '';
     document.getElementById('audDate').value = b ? b.date : (iso || clampISO(state.focusDate || todayISOClamped()));
@@ -2214,7 +2352,9 @@ async function submitAudForm(ev){
     what: document.getElementById('audWhat').value.trim(),
     by: document.getElementById('audBy').value.trim(),
     note: document.getElementById('audNote').value.trim(),
+    bookedBy: audUser(),
   };
+  if (!audUser()){ requireAudUnlock(() => submitAudForm(ev)); return; }
   if (!data.date || !data.from || !data.to || !data.what) return;
   const bad = msg => { const c = document.getElementById('audClash'); c.textContent = msg; c.style.display = ''; };
   if (data.from < AUD_OPEN || data.to > AUD_CLOSE) return bad('The auditorium is open from 8:00 to 3:00 (15:00). Please choose times in that range.');
@@ -2234,7 +2374,7 @@ async function submitAudForm(ev){
 function deleteAudBooking(){
   const id = document.getElementById('audEditId').value;
   if (!id || !confirm('Delete this auditorium booking?')) return;
-  requireUnlock(async () => {
+  requireAudUnlock(async () => {
     try{ await state.dbApi.doc('auditorium/'+id).delete(); toast('Booking deleted.'); closeAudForm(); }
     catch(e){ toast('Could not delete the booking.'); }
   });
@@ -2683,7 +2823,7 @@ function escapeHtml(s){
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 document.addEventListener('keydown', (e)=>{
-  if (e.key === 'Escape'){ closeDayModal(); closeImportModal(); closeUnlockModal(); closeGuide(); closeAudForm(); }
+  if (e.key === 'Escape'){ closeDayModal(); closeImportModal(); closeUnlockModal(); closeGuide(); closeAudForm(); closeAudLogin(); }
 });
 
 /* ---------------- init ---------------- */
