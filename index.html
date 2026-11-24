@@ -1478,9 +1478,13 @@ async function storeAdd(data){
 }
 async function storeUpdate(id, data, action, silent){
   if (state.dbApi){
+    // Emails only go out for a new / announced event, or when an event moves to another day.
+    // Changing the note, place, time, icon, details etc. sends no email.
+    const before = state.events.find(e => e.id === id);
+    const dayChanged = !!(before && data.date && data.date !== before.date);
     try{
       await state.dbApi.doc('events/'+id).update(data);
-      if (!silent) notifyChange(action || 'updated', data);
+      if (!silent && (action === 'added' || dayChanged)) notifyChange(action === 'added' ? 'added' : 'updated', data);
       return true;
     }
     catch(e){ toast('Could not save that change.'); return false; }
@@ -1495,7 +1499,7 @@ async function storeDelete(id, priorData){
   if (state.dbApi){
     try{
       await state.dbApi.doc('events/'+id).delete();
-      if (priorData) notifyChange('deleted', priorData);
+      // no email when an event is deleted
       return true;
     }
     catch(e){ toast('Could not delete that event.'); return false; }
@@ -2761,7 +2765,7 @@ async function submitEventForm(ev){
     toast(prep ? (editingId ? 'Saved — still under preparation (no email sent).' : 'Added as under preparation — shown with an Under prep mark, no email sent.')
                : announcing ? 'Announced — everyone can see it and the notify list was emailed.'
                : onlySupervisors ? 'Supervisors saved (no email sent).'
-               : (editingId ? 'Event updated.' : 'Event added.'));
+               : (editingId ? (before && before.date !== date && category !== 'intl' ? 'Event moved to the new day \u2014 the notify list was emailed.' : 'Event updated (no email sent).') : 'Event added.'));
     resetForm();
     renderDayList();
   }
