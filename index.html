@@ -201,6 +201,16 @@
   .sup-box.show{ display:block; }
   .sup-box .cb-head{ font-size:12px; font-weight:700; margin-bottom:10px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
   .sup-box .cb-head small{ font-weight:500; color:var(--ink-soft); }
+  /* trip / visitor details and supervisors: one line, opened only when needed */
+  .contact-box, .sup-box{ padding:10px 12px; }
+  .contact-box .cb-body, .sup-box .cb-body{ display:none; }
+  .contact-box.open .cb-body, .sup-box.open .cb-body{ display:block; }
+  .cb-head.cb-toggle{ cursor:pointer; margin-bottom:0; align-items:center; user-select:none; }
+  .open > .cb-head.cb-toggle{ margin-bottom:10px; }
+  .cb-arrow{ display:inline-block; transition:transform .15s; margin-right:4px; }
+  .open > .cb-head .cb-arrow{ transform:rotate(90deg); }
+  .cb-filled{ font-weight:600 !important; color:var(--accent) !important; margin-left:4px; }
+  .contact-box:not(.open) .cb-head > small, .sup-box:not(.open) .cb-head > small{ display:none; }
   .sup-row{ display:grid; grid-template-columns:120px 1fr 32px; gap:8px; margin-bottom:8px; align-items:center; }
   .sup-row input{ width:100%; border:1px solid var(--line); background:var(--paper); color:var(--ink); padding:8px 9px; border-radius:8px; font-size:13px; font-family:inherit; }
   .sup-row .sup-del{ border:1px solid var(--line); background:transparent; color:var(--ink-soft); border-radius:8px; height:34px; cursor:pointer; font-size:16px; }
@@ -320,6 +330,8 @@
   .aud-seg{ display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden; }
   .aud-seg button{ border:none; background:var(--paper-raised); padding:4px 12px; font-size:12px; font-weight:700; cursor:pointer; color:var(--ink-soft); font-family:inherit; }
   .aud-seg button.active{ background:var(--accent); color:#fff; }
+  .aud-rooms{ margin-bottom:6px; }
+  .aud-rooms button{ font-size:13px; padding:6px 14px; }
   @media (max-width:600px){ .aud-grid.month{ grid-template-columns:repeat(5,minmax(0,1fr)); padding:4px; gap:3px; } .aud-mi{ font-size:8.5px; } .aud-mcell{ min-height:70px; } }
   .aud-add{ margin-top:auto; align-self:flex-start; font-size:11.5px; font-weight:700; color:var(--accent); background:none; border:1px dashed var(--accent); border-radius:999px; padding:2px 10px; cursor:pointer; font-family:inherit; }
   .aud-bar{ display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; font-size:12.5px; color:var(--ink-soft); }
@@ -586,7 +598,7 @@
         <button id="tabMonth" onclick="setView('month')">Month</button>
         <button id="tabWeek" onclick="setView('week')">Week</button>
         <button id="tabDay" onclick="setView('day')">Day</button>
-        <button id="tabAud" onclick="setView('aud')">&#127917; Auditorium</button>
+        <button id="tabAud" onclick="setView('aud')">&#128205; Places</button>
       </div>
       <button class="btn btn-primary" onclick="openImportModal()">Import events</button>
       <button class="btn" onclick="openExportModal()">Export events</button>
@@ -660,8 +672,8 @@
       </div>
     </div>
     <div class="aud-bar">
-      <span>&#127917; Auditorium (open 8:00&ndash;3:00) &mdash; calendar events with Place = Auditorium <span class="aud-tag cal">Calendar</span> plus bookings only for the auditorium <span class="aud-tag only">Auditorium only</span>. Many items per day are fine; <span class="aud-tag clash">Time clash</span> means two times overlap.</span>
-      <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><span class="aud-seg"><button id="audModeWeek" class="active" onclick="setAudMode('week')">Week</button><button id="audModeMonth" onclick="setAudMode('month')">Month</button></span><span id="audWho"></span><button class="btn btn-sm btn-primary" onclick="openAudForm()">+ Book the auditorium</button></span>
+      <span><span class="aud-seg aud-rooms" id="audRooms"></span><br><span id="audRoomInfo"></span> Many items per day are fine; <span class="aud-tag clash">Time clash</span> means two times overlap.</span>
+      <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><span class="aud-seg"><button id="audModeWeek" class="active" onclick="setAudMode('week')">Week</button><button id="audModeMonth" onclick="setAudMode('month')">Month</button></span><span id="audWho"></span><button class="btn btn-sm btn-primary" id="audBookBtn" onclick="openAudForm()">+ Book</button></span>
     </div>
     <div class="aud-grid" id="audGrid"></div>
   </section>
@@ -712,8 +724,9 @@
           </div>
         </div>
         <div class="contact-box" id="contactBox">
-          <div class="cb-head"><span id="cbTitle">Trip contact</span><small>&#128274; Only editors can see this</small></div>
+          <div class="cb-head cb-toggle" onclick="toggleCb('contactBox')"><span><span class="cb-arrow">&#9656;</span><span id="cbTitle">Trip contact</span> <small class="cb-filled" id="cbFilled"></small></span><small>&#128274; Only editors can see this</small></div>
           <input type="hidden" id="evGuideId" value="">
+          <div class="cb-body" oninput="refreshCbFilled()">
           <div class="guide-pick">
             <div class="field">
               <label for="evGuideSel">Pick from the guide</label>
@@ -743,12 +756,15 @@
             <label for="evContactNote">Contact note <span style="text-transform:none;font-weight:500;">(optional)</span></label>
             <textarea id="evContactNote" maxlength="1000" rows="2" placeholder="Anything else: best time to call, payment, what to bring..."></textarea>
           </div>
+          </div>
         </div>
         <div class="sup-box" id="supBox">
-          <div class="cb-head"><span>&#128101; Supervisors (for each class)</span><small>Everyone can see this</small></div>
+          <div class="cb-head cb-toggle" onclick="toggleCb('supBox')"><span><span class="cb-arrow">&#9656;</span>&#128101; Supervisors (for each class) <small class="cb-filled" id="supFilled"></small></span><small>Everyone can see this</small></div>
+          <div class="cb-body" oninput="refreshCbFilled()">
           <div class="sup-head"><span>Class</span><span>Supervisor names</span><span></span></div>
           <div id="supRows"></div>
           <button type="button" class="btn btn-sm" onclick="addSupRow()">+ Add class</button>
+          </div>
         </div>
         <div class="field">
           <label class="prep-toggle" for="evPrep">
@@ -812,11 +828,11 @@
 <div class="overlay" id="audLoginOverlay" onclick="if(event.target===this) closeAudLogin()">
   <div class="modal" style="max-width:380px;">
     <div class="modal-head">
-      <h3>&#127917; Auditorium bookings</h3>
+      <h3>&#128205; Place bookings</h3>
       <button class="close-x" onclick="closeAudLogin()" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 14px;">Only the auditorium team can add, edit or delete bookings. Choose your name and type your password.</p>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 14px;">Only the bookings team can add, edit or delete bookings. Choose your name and type your password.</p>
       <form onsubmit="submitAudLogin(event)">
         <div class="field">
           <label for="audUserSel">Your name</label>
@@ -840,11 +856,11 @@
 <div class="overlay" id="audOverlay" onclick="if(event.target===this) closeAudForm()">
   <div class="modal">
     <div class="modal-head">
-      <h3 id="audFormTitle">&#127917; Book the auditorium</h3>
+      <h3 id="audFormTitle">Book</h3>
       <button class="close-x" onclick="closeAudForm()" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;">Only the auditorium team (Hoda, Menna, Sarah Elgendy, Abeer Nader) can book. Only for the auditorium: it does <b>not</b> appear on the main calendar and sends <b>no email</b>. The auditorium is open <b>8:00 &ndash; 3:00</b>. You can book many items on the same day &mdash; it is a clash only when two times overlap.</p>
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 12px;">Only the bookings team (Hoda, Menna, Sarah Elgendy, Abeer Nader) can book. This booking is only for <b id="audFormRoom">this place</b>: it does <b>not</b> appear on the main calendar and sends <b>no email</b>. Open <b>8:00 &ndash; 3:00</b>. You can book many items on the same day &mdash; it is a clash only when two times overlap.</p>
       <form id="audForm" onsubmit="submitAudForm(event)">
         <input type="hidden" id="audEditId" value="">
         <div class="field">
@@ -1746,7 +1762,7 @@ function renderWeekView(){
     const isWeekend = WEEKEND_IDX.has(i);
     const isToday = iso === todayStr;
     const outOfRange = !inRange(iso);
-    const evs = byDate[iso] || [];
+    const evs = (byDate[iso] || []).filter(e => !isPlainIntl(e)); // International Days show here only when we celebrate them
 
     const cell = document.createElement('div');
     cell.className = 'day-cell' + (isWeekend?' weekend':'') + (outOfRange?' out':'');
@@ -1774,7 +1790,7 @@ function renderDayView(){
   const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const wkN = academicWeek(startOfWeek(iso));
   document.getElementById('dayTitle').textContent = d.toLocaleDateString(undefined,{weekday:'short', day:'numeric', month:'short', year:'numeric'});
-  const evs = (eventsByDate()[iso] || []);
+  const evs = (eventsByDate()[iso] || []).filter(e => !isPlainIntl(e)); // International Days show here only when we celebrate them
   const rank = e => (isPlainIntl(e) ? 2 : (e.time ? 0 : 1));
   const list = evs.slice().sort((a,b) => rank(a) - rank(b) || (a.time||'').localeCompare(b.time||''));
   const cards = list.map(e => {
@@ -2000,9 +2016,19 @@ function placeHtml(e, cls){
 const CONTACT_FIELDS = ['placeLink','contactName','contactPhone','contactJob','contactNote'];
 const CONTACT_INPUTS = { placeLink:'evPlaceLink', contactName:'evContactName', contactPhone:'evContactPhone', contactJob:'evContactJob', contactNote:'evContactNote' };
 function hasContactBox(cat){ return cat === 'trip' || cat === 'visit'; }
+function toggleCb(id){ document.getElementById(id).classList.toggle('open'); }
+function refreshCbFilled(){
+  const c = CONTACT_FIELDS.some(k => document.getElementById(CONTACT_INPUTS[k]).value.trim());
+  const sp = [...document.querySelectorAll('#supRows input')].some(i => i.value.trim());
+  document.getElementById('cbFilled').textContent = c ? '\u2713 filled' : '';
+  document.getElementById('supFilled').textContent = sp ? '\u2713 filled' : '';
+}
 function updateContactBox(cat){
   const box = document.getElementById('contactBox');
   if (!box) return;
+  box.classList.remove('open');
+  document.getElementById('supBox').classList.remove('open');
+  refreshCbFilled();
   box.classList.toggle('show', hasContactBox(cat));
   updateSupBox(cat);
   const isTrip = cat === 'trip';
@@ -2183,10 +2209,23 @@ function subscribeAud(){
     );
   }catch(e){ console.error('Could not load auditorium bookings:', e); }
 }
+/* Bookable places. Old bookings without a room belong to the Auditorium. */
+const AUD_ROOMS = [ { name:'Auditorium', icon:'&#127917;' }, { name:'Buses waiting area', icon:'&#128652;' } ];
+function audRoom(){ return state.audRoom || 'Auditorium'; }
+function audRoomIcon(){ const r = AUD_ROOMS.find(x => x.name === audRoom()); return r ? r.icon : '&#128205;'; }
+function setAudRoom(name){ state.audRoom = name; try{ localStorage.setItem('aud-room', name); }catch(e){} renderAudView(); }
+try{ const r = localStorage.getItem('aud-room'); if (r) state.audRoom = r; }catch(e){}
+function renderAudRooms(){
+  const el = document.getElementById('audRooms');
+  if (!el) return;
+  el.innerHTML = AUD_ROOMS.map(r => `<button class="${r.name === audRoom() ? 'active' : ''}" onclick="setAudRoom('${r.name}')">${r.icon} ${escapeHtml(r.name)}</button>`).join('');
+  document.getElementById('audRoomInfo').innerHTML = `${audRoomIcon()} <b>${escapeHtml(audRoom())}</b> (open 8:00&ndash;3:00) &mdash; calendar events with Place = ${escapeHtml(audRoom())} <span class="aud-tag cal">Calendar</span> plus bookings only for this place <span class="aud-tag only">Booking only</span>.`;
+  document.getElementById('audBookBtn').innerHTML = '+ Book the ' + escapeHtml(audRoom().toLowerCase());
+}
 function audItemsFor(iso){
-  const cal = visibleEvents().filter(e => e.date === iso && e.place === 'Auditorium' && PLACE_CATS.has(e.category))
+  const cal = visibleEvents().filter(e => e.date === iso && e.place === audRoom() && PLACE_CATS.has(e.category))
     .map(e => ({ kind:'cal', id:e.id, date:iso, from:e.time||'', to:'', what:e.title, by:'', note:e.note||'', ev:e }));
-  const own = (state.aud || []).filter(b => b.date === iso).map(b => ({ kind:'only', id:b.id, date:iso, from:b.from||'', to:b.to||'', what:b.what||'', by:b.by||'', note:b.note||'', bookedBy:b.bookedBy||'' }));
+  const own = (state.aud || []).filter(b => b.date === iso && (b.room || 'Auditorium') === audRoom()).map(b => ({ kind:'only', id:b.id, date:iso, from:b.from||'', to:b.to||'', what:b.what||'', by:b.by||'', note:b.note||'', bookedBy:b.bookedBy||'' }));
   return cal.concat(own).sort((a,b) => (a.from||'99').localeCompare(b.from||'99'));
 }
 const AUD_OPEN = '08:00', AUD_CLOSE = '15:00';
@@ -2229,7 +2268,7 @@ async function submitAudLogin(ev){
   }
 }
 function closeAudLogin(){ document.getElementById('audLoginOverlay').classList.remove('show'); pendingAudAction = null; }
-function audSignOut(){ state._audUser = ''; try{ sessionStorage.removeItem('aud-user'); }catch(e){} renderAudWho(); toast('Signed out of auditorium bookings.'); }
+function audSignOut(){ state._audUser = ''; try{ sessionStorage.removeItem('aud-user'); }catch(e){} renderAudWho(); toast('Signed out of bookings.'); }
 function renderAudWho(){
   const el = document.getElementById('audWho');
   if (!el) return;
@@ -2293,6 +2332,7 @@ function renderAudMonth(){
   grid.innerHTML = html;
 }
 function renderAudView(){
+  renderAudRooms();
   if (state.audMode === 'month') return renderAudMonth();
   document.getElementById('audGrid').className = 'aud-grid';
   const start = startOfWeek(clampISO(state.focusDate || todayISOClamped()));
@@ -2315,8 +2355,8 @@ function renderAudView(){
     box.className = 'aud-day';
     box.style.setProperty('--day', WEEKDAY_TINTS[i]);
     box.innerHTML = `<div class="ah"><b>${DAY_NAMES[i]}</b><span>${d.getDate()} ${d.toLocaleDateString(undefined,{month:'short'})}</span></div>` +
-      (items.length ? items.map(it => `<div class="aud-item ${it.kind==='cal'?'cal':''}" onclick="${it.kind==='cal' ? `openDayModal('${iso}')` : `openAudForm('${it.id}')`}" title="${it.kind==='cal' ? 'From the main calendar \u2014 click to view or edit' : 'Auditorium only \u2014 click to edit'}">
-          <div>${it.from ? `<span class="tm">${escapeHtml(it.from)}${it.to ? '\u2013' + escapeHtml(it.to) : ''}</span>` : '<span class="tm" style="color:var(--ink-soft)">Time not set</span>'}<span class="aud-tag ${it.kind==='cal'?'cal':'only'}">${it.kind==='cal' ? 'Calendar' : 'Auditorium only'}</span>${clashIds.has(it.kind+it.id) ? '<span class="aud-tag clash">Time clash</span>' : ''}</div>
+      (items.length ? items.map(it => `<div class="aud-item ${it.kind==='cal'?'cal':''}" onclick="${it.kind==='cal' ? `openDayModal('${iso}')` : `openAudForm('${it.id}')`}" title="${it.kind==='cal' ? 'From the main calendar \u2014 click to view or edit' : 'Booking only \u2014 click to edit'}">
+          <div>${it.from ? `<span class="tm">${escapeHtml(it.from)}${it.to ? '\u2013' + escapeHtml(it.to) : ''}</span>` : '<span class="tm" style="color:var(--ink-soft)">Time not set</span>'}<span class="aud-tag ${it.kind==='cal'?'cal':'only'}">${it.kind==='cal' ? 'Calendar' : 'Booking only'}</span>${clashIds.has(it.kind+it.id) ? '<span class="aud-tag clash">Time clash</span>' : ''}</div>
           <div class="tt">${it.kind==='cal' ? iconHtml(it.ev) : ''}${escapeHtml(it.what)}</div>
           ${it.by ? `<div class="sub">&#128100; ${escapeHtml(it.by)}</div>` : ''}${it.bookedBy ? `<div class="sub" style="font-size:10.5px">Booked by ${escapeHtml(it.bookedBy)}</div>` : ''}${it.note ? `<div class="sub">${escapeHtml(it.note.length > 160 ? it.note.slice(0,160) + '\u2026' : it.note)}</div>` : ''}
         </div>`).join('') : '<div class="aud-empty">Free all day</div>') +
@@ -2334,7 +2374,9 @@ function openAudForm(id, iso){
     document.getElementById('audWhat').value = b ? (b.what||'') : '';
     document.getElementById('audBy').value = b ? (b.by||'') : '';
     document.getElementById('audNote').value = b ? (b.note||'') : '';
-    document.getElementById('audFormTitle').innerHTML = b ? '&#127917; Edit auditorium booking' : '&#127917; Book the auditorium';
+    const room = b ? (b.room || 'Auditorium') : audRoom();
+    document.getElementById('audFormTitle').innerHTML = (b ? 'Edit booking: ' : 'Book: ') + escapeHtml(room);
+    document.getElementById('audFormRoom').textContent = room;
     document.getElementById('audDelBtn').style.display = b ? '' : 'none';
     document.getElementById('audClash').style.display = 'none';
     document.getElementById('audOverlay').classList.add('show');
@@ -2353,19 +2395,20 @@ async function submitAudForm(ev){
     by: document.getElementById('audBy').value.trim(),
     note: document.getElementById('audNote').value.trim(),
     bookedBy: audUser(),
+    room: (id && (state.aud || []).find(x => x.id === id)?.room) || audRoom(),
   };
   if (!audUser()){ requireAudUnlock(() => submitAudForm(ev)); return; }
   if (!data.date || !data.from || !data.to || !data.what) return;
   const bad = msg => { const c = document.getElementById('audClash'); c.textContent = msg; c.style.display = ''; };
-  if (data.from < AUD_OPEN || data.to > AUD_CLOSE) return bad('The auditorium is open from 8:00 to 3:00 (15:00). Please choose times in that range.');
+  if (data.from < AUD_OPEN || data.to > AUD_CLOSE) return bad('This place is open from 8:00 to 3:00 (15:00). Please choose times in that range.');
   if (data.to <= data.from) return bad('"To" must be after "From".');
-  const clashes = audItemsFor(data.date).filter(it => !(it.kind === 'only' && it.id === id) && audOverlaps(it, data));
-  if (clashes.length && !confirm('Time clash in the auditorium with:\n\n' + clashes.map(c => (c.from||'') + (c.to ? '\u2013'+c.to : '') + '  ' + c.what).join('\n') + '\n\nSave anyway?')) return;
+  const clashes = audItemsFor(data.date).filter(it => data.room === audRoom()).filter(it => !(it.kind === 'only' && it.id === id) && audOverlaps(it, data));
+  if (clashes.length && !confirm('Time clash in the ' + data.room + ' with:\n\n' + clashes.map(c => (c.from||'') + (c.to ? '\u2013'+c.to : '') + '  ' + c.what).join('\n') + '\n\nSave anyway?')) return;
   if (!state.dbApi){ toast('Bookings need the shared calendar connection.'); return; }
   try{
     if (id) await state.dbApi.doc('auditorium/'+id).update(data);
     else await state.dbApi.collection('auditorium').add(data);
-    toast(id ? 'Booking updated.' : 'Auditorium booked.');
+    toast(id ? 'Booking updated.' : data.room + ' booked.');
     state.focusDate = data.date;
     closeAudForm();
     if (state.view !== 'aud') setView('aud'); else renderAudView();
@@ -2373,7 +2416,7 @@ async function submitAudForm(ev){
 }
 function deleteAudBooking(){
   const id = document.getElementById('audEditId').value;
-  if (!id || !confirm('Delete this auditorium booking?')) return;
+  if (!id || !confirm('Delete this booking?')) return;
   requireAudUnlock(async () => {
     try{ await state.dbApi.doc('auditorium/'+id).delete(); toast('Booking deleted.'); closeAudForm(); }
     catch(e){ toast('Could not delete the booking.'); }
@@ -2603,6 +2646,7 @@ function pickFromGuide(id){
     document.getElementById('evContactName').value = g.contactName || '';
     document.getElementById('evContactPhone').value = g.contactPhone || '';
     document.getElementById('evContactJob').value = g.contactJob || '';
+    setTimeout(refreshCbFilled, 0);
     if (!document.getElementById('evContactNote').value) document.getElementById('evContactNote').value = g.note || '';
     const t = document.getElementById('evTitle');
     if (!t.value.trim()) t.value = g.name;
@@ -2642,6 +2686,8 @@ function addGuideToCalendar(id){
   renderCatSelect(g.type);
   updateContactBox(g.type);
   pickFromGuide(g.id);
+  document.getElementById('contactBox').classList.add('open');
+  refreshCbFilled();
   renderGuidePick(g.type);
   document.getElementById('evDate').focus();
   toast('Choose the date, check the title, then press “Add event”.');
